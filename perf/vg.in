@@ -1,0 +1,8 @@
+#!/bin/sh
+
+valgrind --tool=memcheck --trace-children=yes \
+	--show-reachable=yes \
+	--track-fds=yes \
+	--num-callers=32 \
+	--memcheck:leak-check=yes --memcheck:leak-resolution=high \
+	"$@"

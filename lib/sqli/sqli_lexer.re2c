@@ -1,0 +1,506 @@
+#include "sqli.h"
+#include "sqli_lexer.h"
+#include "sqli_lexer_helper.h"
+#include <assert.h>
+#include <string.h>
+
+#define SSYM(ch) [ch] = ch
+
+static const unsigned char selfsyms[] = {
+    SSYM('.'), SSYM(','), SSYM('('), SSYM(')'),
+    SSYM('*'), SSYM('['), SSYM(']'),
+    SSYM(';'),
+};
+
+int
+sqli_get_token(
+    struct sqli_detect_ctx *ctx, union sqli_token_arg *arg)
+{
+    const unsigned char *end = ctx->lexer.data + ctx->lexer.siz;
+    const unsigned char *marker, *ctxmarker;
+
+    if (ctx->lexer.pending[ctx->lexer.pending_first].tok > 0) {
+        struct sqli_pending_token *token =
+            &ctx->lexer.pending[ctx->lexer.pending_first];
+        int tok = token->tok;
+
+        *arg = token->arg;
+        memset(token, 0, sizeof(*token));
+        SQLI_PENDING_SHIFT(ctx->lexer.pending_first);
+        return (tok);
+    }
+
+#define YYGETSTATE() ctx->lexer.state
+#define YYSETSTATE(st) \
+    ({ \
+        ctx->lexer.state = (st); \
+    })
+#define YYGETCONDITION() ctx->lexer.condition
+#define YYSETCONDITION(cond) ({ctx->lexer.condition = (cond);})
+#define START_LEXEM(ctx) \
+    do { \
+        (ctx)->lexer.start = (ctx)->lexer.pos; \
+    } while (0)
+#define RET(ctx, tok) \
+    do { \
+       START_LEXEM(ctx); \
+       return (tok); \
+    } while (0)
+#define KEYNAME_SET(arg, _name_str) \
+    do { \
+        (arg)->data.value.str = _name_str; \
+        (arg)->data.value.len = sizeof(_name_str) - 1; \
+    } while (0)
+#define KEYNAME_SET_RET_EX(ctx, arg, _str, _name, _flags) \
+    do { \
+        KEYNAME_SET(arg, _str); \
+        (arg)->data.flags = (_flags); \
+        (arg)->data.tok = TOK_##_name; \
+        RET(ctx, TOK_##_name); \
+    } while (0)
+#define KEYNAME_SET_RET(ctx, arg, _name, _flags) \
+    KEYNAME_SET_RET_EX(ctx, arg, #_name, _name, _flags)
+#define RET_DATA_EX(toksuff, ctx, arg, _flags) \
+    do { \
+        sqli_data_done(&(ctx)->lexer); \
+        (arg)->data.value = (ctx)->lexer.buf; \
+        (arg)->data.tok = TOK_##toksuff; \
+        (arg)->data.flags = (_flags)|SQLI_VALUE_NEEDFREE; \
+        sqli_data_start(&(ctx)->lexer, 0); \
+        RET(ctx, TOK_##toksuff); \
+    } while (0)
+#define RET_DATA(toksuff, ctx, arg) \
+    RET_DATA_EX(toksuff, ctx, arg, 0)
+#define RET_DATA_ERROR(ctx) sqli_data_error(&(ctx)->lexer)
+#define YYCH ctx->lexer.yych
+#define YYACCEPT ctx->lexer.yyaccept
+
+    /*!max:re2c */
+    /*!re2c
+      re2c:define:YYCTYPE  = "unsigned char";
+      re2c:define:YYCURSOR = ctx->lexer.pos;
+      re2c:define:YYMARKER = marker;
+      re2c:define:YYCTXMARKER = ctxmarker;
+      re2c:define:YYLIMIT  = end;
+      re2c:define:YYCONDTYPE = SQLI_LEXER_CONDTYPE;
+      re2c:yyfill:enable   = 0;
+      re2c:yyfill:check    = 0;
+      re2c:yych:conversion = 0;
+      re2c:indent:top      = 1;
+      re2c:variable:yych   = YYCH;
+      re2c:variable:yyaccept = YYACCEPT;
+      re2c:condprefix      = sqli_;
+      re2c:condenumprefix  = sqli_;
+
+      whitespace = [ \t\b\r\n\f];
+      self = [,\.()\[\];];
+      opchar = [~!^&|?%:+\-*/<>=];
+      opchar_nocomment = [~!^&|?%+<>=];
+      key_end = [^a-zA-Z0-9_];
+
+      <> {
+          if (ctx->lexer.instring) {
+              YYSETCONDITION(sqli_INSTRING);
+              arg->data.flags = SQLI_DATA_NOSTART;
+              sqli_data_start(&ctx->lexer, 0);
+              goto sqli_INSTRING;
+          }
+          YYSETCONDITION(sqli_INITIAL);
+          goto sqli_INITIAL;
+      }
+      <INSTRING> "''"|'""' {
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_INSTRING;
+      }
+      <INSTRING> ['"] => INITIAL {
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <SQUOTE> "''" {
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_SQUOTE;
+      }
+      <DQUOTE> '""' {
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_DQUOTE;
+      }
+      <SQUOTE> ['] => INITIAL {
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <DQUOTE> ["] => INITIAL {
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <INSTRING,SQUOTE,DQUOTE> [\x00] => INITIAL {
+          ctx->lexer.pos--;
+          arg->data.flags |= SQLI_DATA_NOEND;
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <INSTRING,SQUOTE,DQUOTE> . {
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto yy0;
+      }
+      <INSTRING,SQUOTE,DQUOTE> [^] {
+          ctx->lexer.pos--;
+          YYSETSTATE(-1);
+          RET_DATA_ERROR(ctx);
+          RET(ctx, TOK_ERROR);
+      }
+      <NUMBER> [0-9\.eE] {
+          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+              goto sqli_NUMBER;
+          else {
+              sqli_data_error(&ctx->lexer);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <NUMBER> [^] => INITIAL {
+          ctx->lexer.pos--;
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <HEXNUMBER> [0-9a-fA-F] {
+          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+              goto sqli_HEXNUMBER;
+          else {
+              sqli_data_error(&ctx->lexer);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <HEXNUMBER> [^] => INITIAL {
+          ctx->lexer.pos--;
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <VAR> [0-9a-zA-Z_@$] {
+          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+              goto sqli_VAR;
+          else {
+              sqli_data_error(&ctx->lexer);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <VAR> [^] => INITIAL {
+          ctx->lexer.pos--;
+          YYSETSTATE(-1);
+          RET_DATA(NAME, ctx, arg);
+      }
+      <OPERATOR> opchar_nocomment {
+  opchar_generic:
+          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+              goto sqli_OPERATOR;
+          else {
+              sqli_data_error(&ctx->lexer);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <OPERATOR> '-' {
+          assert(ctx->lexer.buf.len > 0);
+          if (ctx->lexer.buf.str[ctx->lexer.buf.len - 1] != '-')
+              goto opchar_generic;
+          ctx->lexer.buf.len--;
+          YYSETCONDITION(sqli_DASHCOMMENT);
+          YYSETSTATE(-1);
+          if (!ctx->lexer.buf.len) {
+              sqli_data_free(&ctx->lexer);
+              goto sqli_DASHCOMMENT;
+          }
+          goto operator_done;
+      }
+      <OPERATOR> '*' {
+          assert(ctx->lexer.buf.len > 0);
+          if (ctx->lexer.buf.str[ctx->lexer.buf.len - 1] != '/')
+              goto opchar_generic;
+          ctx->lexer.buf.len--;
+          YYSETCONDITION(sqli_STARCOMMENT_PROBE);
+          YYSETSTATE(-1);
+          if (!ctx->lexer.buf.len) {
+              sqli_data_free(&ctx->lexer);
+              goto sqli_STARCOMMENT_PROBE;
+          }
+          goto operator_done;
+      }
+      <OPERATOR> '/' {
+          assert(ctx->lexer.buf.len > 0);
+          if (ctx->lexer.buf.str[ctx->lexer.buf.len - 1] != '*')
+              goto opchar_generic;
+          // process unexpected "*/" construction as a space
+          ctx->lexer.buf.len--;
+          YYSETCONDITION(sqli_INITIAL);
+          YYSETSTATE(-1);
+          if (!ctx->lexer.buf.len) {
+              sqli_data_free(&ctx->lexer);
+              goto sqli_INITIAL;
+          }
+          goto operator_done;
+      }
+      <OPERATOR> [^] => INITIAL {
+          assert(ctx->lexer.buf.len != 0);
+          ctx->lexer.pos--;
+          YYSETSTATE(-1);
+  operator_done:
+          if (ctx->lexer.buf.len == 1) {
+              unsigned char prev = ctx->lexer.buf.str[0];
+
+              if (prev < sizeof(selfsyms) / sizeof(selfsyms[0]) &&
+                  selfsyms[prev] != 0) {
+
+                  sqli_data_free(&ctx->lexer);
+
+                  arg->data.value.str = (char *)&selfsyms[prev];
+                  arg->data.value.len = 1;
+                  arg->data.flags = SQLI_KEY_INSTR;
+                  arg->data.tok = prev;
+                  RET(ctx, prev);
+              }
+          }
+          RET_DATA_EX(OPERATOR, ctx, arg, SQLI_KEY_INSTR);
+      }
+      <DASHCOMMENT> [\r\n] => INITIAL {
+          START_LEXEM(ctx);
+          goto sqli_INITIAL;
+      }
+      <DASHCOMMENT> [\x00] => INITIAL {
+          // TODO: create UNCLOSED_COMMENT key
+          ctx->lexer.pos--;
+          goto sqli_INITIAL;
+      }
+      <DASHCOMMENT> . :=> DASHCOMMENT
+      <STARCOMMENT_PROBE> [\x00] => INITIAL {
+          // TODO: create UNCLOSED_COMMENT key
+          ctx->lexer.pos--;
+          goto sqli_INITIAL;
+      }
+      <STARCOMMENT_PROBE> ('!' [0-9]{0,6})|("M!" [0-9]{0,6}) => INITIAL {
+          // TODO: create EXECUTABLE_COMMENT key
+          goto sqli_INITIAL;
+      }
+      <STARCOMMENT_PROBE> [^] => STARCOMMENT {
+          ctx->lexer.pos--;
+          goto sqli_STARCOMMENT;
+      }
+      <STARCOMMENT> [\x00] => INITIAL {
+          // TODO: create UNCLOSED_COMMENT key
+          ctx->lexer.pos--;
+          goto sqli_INITIAL;
+      }
+      <STARCOMMENT> '*/' => INITIAL {
+          START_LEXEM(ctx);
+          goto sqli_INITIAL;
+      }
+      <STARCOMMENT> [^] :=> STARCOMMENT
+      <INITIAL> whitespace {
+          START_LEXEM(ctx);
+          goto sqli_INITIAL;
+      }
+      <INITIAL> '#' :=> DASHCOMMENT
+      <INITIAL> 'SELECT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, SELECT, SQLI_KEY_READ|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'UPDATE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, UPDATE, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'INSERT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, INSERT, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'EXECUTE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, EXECUTE, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'DROP'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DROP, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'DELETE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DELETE, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ATTACH'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ATTACH, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'DISTINCT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DISTINCT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'VARIADIC'/key_end {
+          KEYNAME_SET_RET(ctx, arg, VARIADIC, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'BETWEEN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, BETWEEN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'LIKE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LIKE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'FROM'/key_end {
+          KEYNAME_SET_RET(ctx, arg, FROM, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'FOR'/key_end {
+          KEYNAME_SET_RET(ctx, arg, FOR, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'INTO'/key_end {
+          KEYNAME_SET_RET(ctx, arg, INTO, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'WHERE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, WHERE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'OR'/key_end {
+          KEYNAME_SET_RET(ctx, arg, OR, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ON'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ON, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'AS'/key_end {
+          KEYNAME_SET_RET(ctx, arg, AS, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'SET'/key_end {
+          KEYNAME_SET_RET(ctx, arg, SET, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'CROSS'/key_end {
+          KEYNAME_SET_RET(ctx, arg, CROSS, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'FULL'/key_end {
+          KEYNAME_SET_RET(ctx, arg, FULL, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'INNER'/key_end {
+          KEYNAME_SET_RET(ctx, arg, INNER, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'NATURAL'/key_end {
+          KEYNAME_SET_RET(ctx, arg, NATURAL, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'LEFT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LEFT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'RIGHT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, RIGHT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'JOIN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, JOIN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'USING'/key_end {
+          KEYNAME_SET_RET(ctx, arg, USING, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ORDER'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ORDER, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'BY'/key_end {
+          KEYNAME_SET_RET(ctx, arg, BY, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'GROUP'/key_end {
+          KEYNAME_SET_RET(ctx, arg, GROUP, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'UNION'/key_end {
+          KEYNAME_SET_RET(ctx, arg, UNION, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'INTERSECT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, INTERSECT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'EXCEPT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, EXCEPT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ALL'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ALL, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'HAVING'/key_end {
+          KEYNAME_SET_RET(ctx, arg, HAVING, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'LIMIT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LIMIT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'OFFSET'/key_end {
+          KEYNAME_SET_RET(ctx, arg, OFFSET, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'IS'/key_end {
+          KEYNAME_SET_RET(ctx, arg, IS, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'NOT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, NOT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'DIV'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DIV, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'CASE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, CASE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'WHEN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, WHEN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'THEN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, THEN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ELSE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ELSE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'END'/key_end {
+          KEYNAME_SET_RET(ctx, arg, END, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'IN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, IN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'BOOLEAN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, BOOLEAN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'MODE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, MODE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'WAITFOR'/key_end {
+          KEYNAME_SET_RET(ctx, arg, WAITFOR, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'DELAY'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DELAY, SQLI_KEY_INSTR);
+      }
+      <INITIAL> '||' {
+          KEYNAME_SET_RET(ctx, arg, OR, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'AND'/key_end {
+          KEYNAME_SET_RET(ctx, arg, AND, SQLI_KEY_INSTR);
+      }
+      <INITIAL> '&&' {
+          KEYNAME_SET_RET(ctx, arg, AND, SQLI_KEY_INSTR);
+      }
+      <INITIAL> opchar => OPERATOR {
+          sqli_data_start(&ctx->lexer, 0);
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_OPERATOR;
+      }
+      <INITIAL> ['] => SQUOTE {
+          sqli_data_start(&ctx->lexer, 0);
+          goto sqli_SQUOTE;
+      }
+      <INITIAL> ["] => DQUOTE {
+          sqli_data_start(&ctx->lexer, 0);
+          goto sqli_DQUOTE;
+      }
+      <INITIAL> [\.][0-9] => NUMBER {
+          sqli_data_start(&ctx->lexer, 257);
+          sqli_data_eat_char(&ctx->lexer, '.');
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_NUMBER;
+      }
+      <INITIAL> '0x'[0-9a-fA-F] => HEXNUMBER {
+          sqli_data_start(&ctx->lexer, 257);
+          sqli_data_eat_char(&ctx->lexer, '0');
+          sqli_data_eat_char(&ctx->lexer, 'x');
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_HEXNUMBER;
+      }
+      <INITIAL> [0-9] => NUMBER {
+          sqli_data_start(&ctx->lexer, 257);
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_NUMBER;
+      }
+      <INITIAL> self {
+          arg->data.value.str = (char *)&selfsyms[ctx->lexer.pos[-1]];
+          arg->data.value.len = 1;
+          arg->data.flags = SQLI_KEY_INSTR;
+          arg->data.tok = ctx->lexer.pos[-1];
+          RET(ctx, ctx->lexer.pos[-1]);
+      }
+      <INITIAL> [a-zA-Z_@] => VAR {
+          sqli_data_start(&ctx->lexer, 257);
+          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          goto sqli_VAR;
+      }
+      <INITIAL> [\x00] { return (0); }
+      <INITIAL> [^] {
+          RET(ctx, TOK_ERROR);
+      }
+    */
+}
