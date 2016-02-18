@@ -83,10 +83,11 @@ perf_usage(const char *progname)
 {
     fprintf(stderr,
             "Usage:\n"
-            "\t%s [-ehnrv]\n"
+            "\t%s [-ehnrv] [-p parser]\n"
             "\n"
             "\t-h   Show this help message\n"
             "\t-v   Increase verbose level\n"
+            "\t-p   Parser to use (default is sqli)\n"
             "\t-e   Echo input strings\n"
             "\t     (verbose=1: attacks only, verbose=1: all)\n"
             "\t-r   Show small report for each input string\n"
@@ -100,6 +101,7 @@ main(int argc, char **argv)
     struct detect *detect;
     char *progname;
     char buf[MAXLINE];
+    char parser[32] = "sqli";
     size_t len;
     int argval;
     unsigned verbose = 0;
@@ -115,8 +117,11 @@ main(int argc, char **argv)
         progname = argv[0];
     progname = strdup(progname);
 
-    while ((argval = getopt(argc, argv, "ehnrv")) != EOF) {
+    while ((argval = getopt(argc, argv, "p:ehnrv")) != EOF) {
         switch (argval) {
+        case 'p':
+            snprintf(parser, sizeof(parser), "%s", optarg);
+            break;
         case 'e':
             echo = true;
             break;
@@ -142,8 +147,8 @@ main(int argc, char **argv)
         rc = EXIT_FAILURE;
         goto done;
     }
-    if ((detect = detect_open("sqli")) == NULL) {
-        ERR("Cannot open sqli parser");
+    if ((detect = detect_open(parser)) == NULL) {
+        ERR("Cannot open %s parser", parser);
         rc = EXIT_FAILURE;
         goto done;
     }
