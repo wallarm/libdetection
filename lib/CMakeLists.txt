@@ -17,6 +17,7 @@ set (SOURCES
 
 set (PARSERS
   sqli
+  pt
 )
 
 set (PARSERS_TARGETS)

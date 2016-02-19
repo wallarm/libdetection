@@ -1,0 +1,217 @@
+#include "pt.h"
+#include "pt_lexer.h"
+
+static int
+pt_name_end(struct pt_detect_ctx *ctx, union pt_token_arg *arg)
+{
+    arg->data.value = ctx->lexer.buf.data;
+    arg->data.tok = TOK_NAME;
+    arg->data.flags = PT_VALUE_NEEDFREE;
+    detect_buf_reinit(&ctx->lexer.buf);
+    return (TOK_NAME);
+}
+
+static int
+pt_root(struct pt_detect_ctx *ctx, union pt_token_arg *arg,
+        const char *name, size_t len)
+{
+    arg->data.value.str = (void *)name;
+    arg->data.value.len = len;
+    arg->data.tok = TOK_ROOT;
+    arg->data.flags = 0;
+    return (TOK_ROOT);
+}
+
+int
+pt_get_token(
+    struct pt_detect_ctx *ctx, union pt_token_arg *arg)
+{
+    const unsigned char *end = ctx->lexer.data + ctx->lexer.siz;
+    const unsigned char *marker, *ctxmarker;
+
+    switch (ctx->pending) {
+    case PT_PENDING_SEP:
+        ctx->pending = 0;
+        arg->data.tok = TOK_SEP;
+        arg->data.flags = PT_KEY_INSTR;
+        return (TOK_SEP);
+    case PT_PENDING_END:
+        ctx->pending = 0;
+        return (0);
+    default:
+        break;
+    }
+
+#define YYGETSTATE() ctx->lexer.state
+#define YYSETSTATE(st) \
+    ({ \
+        ctx->lexer.state = (st); \
+    })
+#define YYGETCONDITION() ctx->lexer.condition
+#define YYSETCONDITION(cond) ({ctx->lexer.condition = (cond);})
+#define YYCH ctx->lexer.yych
+#define YYACCEPT ctx->lexer.yyaccept
+#define CSTR(cstr) cstr, sizeof(cstr) - 1
+
+    /*!max:re2c */
+    /*!re2c
+      re2c:define:YYCTYPE  = "unsigned char";
+      re2c:define:YYCURSOR = ctx->lexer.pos;
+      re2c:define:YYMARKER = marker;
+      re2c:define:YYCTXMARKER = ctxmarker;
+      re2c:define:YYLIMIT  = end;
+      re2c:define:YYCONDTYPE = PT_LEXER_CONDTYPE;
+      re2c:yyfill:enable   = 0;
+      re2c:yyfill:check    = 0;
+      re2c:yych:conversion = 0;
+      re2c:indent:top      = 1;
+      re2c:variable:yych   = YYCH;
+      re2c:variable:yyaccept = YYACCEPT;
+      re2c:condprefix      = pt_;
+      re2c:condenumprefix  = pt_;
+
+      dot = "."|"\xc0\xae";
+      dir_sep = [/\\]|"\xc0\xaf"|"\xc1\x9c";
+      dir_sep_end = [\x00]|dir_sep;
+
+      <> {
+          YYSETCONDITION(pt_INITIAL);
+          goto pt_INITIAL;
+      }
+      <NAME> dir_sep => INITIAL {
+          YYSETSTATE(-1);
+          ctx->pending = PT_PENDING_SEP;
+          return (pt_name_end(ctx, arg));
+      }
+      <NAME> [\x00] => INITIAL {
+          YYSETSTATE(-1);
+          ctx->pending = PT_PENDING_END;
+          return (pt_name_end(ctx, arg));
+      }
+      <NAME> [^] {
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
+          goto pt_NAME;
+      }
+      <INITIAL> dir_sep {
+          arg->data.tok = TOK_SEP;
+          arg->data.flags = PT_KEY_INSTR;
+          return (TOK_SEP);
+      }
+      <INITIAL> (dot){2,3}/dir_sep_end {
+          arg->data.tok = TOK_TRAV;
+          arg->data.flags = PT_KEY_INSTR;
+          return (TOK_TRAV);
+      }
+      <INITIAL> "bin"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("bin")));
+      }
+      <INITIAL> "boot"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("boot")));
+      }
+      <INITIAL> "cdrom"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("cdrom")));
+      }
+      <INITIAL> "dev"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("dev")));
+      }
+      <INITIAL> "devices"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("devices")));
+      }
+      <INITIAL> "etc"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("etc")));
+      }
+      <INITIAL> "export"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("export")));
+      }
+      <INITIAL> "home"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("home")));
+      }
+      <INITIAL> "kern"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("kern")));
+      }
+      <INITIAL> "kernel"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("kernel")));
+      }
+      <INITIAL> "lib"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("lib")));
+      }
+      <INITIAL> "lib64"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("lib64")));
+      }
+      <INITIAL> "libdata"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("libdata")));
+      }
+      <INITIAL> "libexec"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("libexec")));
+      }
+      <INITIAL> "lost+found"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("lost+found")));
+      }
+      <INITIAL> "media"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("media")));
+      }
+      <INITIAL> "mnt"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("mnt")));
+      }
+      <INITIAL> "net"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("net")));
+      }
+      <INITIAL> "opt"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("opt")));
+      }
+      <INITIAL> "platform"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("platform")));
+      }
+      <INITIAL> "proc"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("proc")));
+      }
+      <INITIAL> "rescue"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("rescue")));
+      }
+      <INITIAL> "root"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("root")));
+      }
+      <INITIAL> "run"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("run")));
+      }
+      <INITIAL> "sbin"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("sbin")));
+      }
+      <INITIAL> "selinux"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("selinux")));
+      }
+      <INITIAL> ".snap"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR(".snap")));
+      }
+      <INITIAL> ".snapshots"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR(".snapshots")));
+      }
+      <INITIAL> "srv"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("srv")));
+      }
+      <INITIAL> "stand"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("stand")));
+      }
+      <INITIAL> "sys"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("sys")));
+      }
+      <INITIAL> "system"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("system")));
+      }
+      <INITIAL> "tmp"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("tmp")));
+      }
+      <INITIAL> "usr"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("usr")));
+      }
+      <INITIAL> "var"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("var")));
+      }
+      <INITIAL> [\x00] { return (0); }
+      <INITIAL> [^] => NAME {
+          detect_buf_init(&ctx->lexer.buf, 32, 1024);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
+          goto pt_NAME;
+      }
+    */
+}

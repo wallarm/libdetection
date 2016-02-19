@@ -61,6 +61,7 @@ detect_parser_init(void)
     detect_parsers.allocator = (avl_allocator_t *)&avl_allocator_0;
 
     TRYLOAD(rc, detect_parser_sqli);
+    TRYLOAD(rc, detect_parser_pt);
   done:
     if (rc) {
         detect_parser_deinit();
