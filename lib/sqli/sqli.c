@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <assert.h>
-#include "sqli_lexer_helper.h"
 
 static const struct {
     struct detect_ctx_desc desc;
@@ -110,7 +109,7 @@ sqli_lexer_init(struct sqli_detect_lexer_ctx *lexer)
 static void
 sqli_lexer_deinit(struct sqli_detect_lexer_ctx *lexer)
 {
-    sqli_data_free(lexer);
+    detect_buf_deinit(&lexer->buf);
     while (1) {
         struct sqli_pending_token *token =
             lexer->pending + lexer->pending_first;

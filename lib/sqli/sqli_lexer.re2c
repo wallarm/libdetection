@@ -1,8 +1,10 @@
 #include "sqli.h"
 #include "sqli_lexer.h"
-#include "sqli_lexer_helper.h"
 #include <assert.h>
 #include <string.h>
+
+#define MAXBUFSIZ 1024
+#define MINBUFSIZ 32
 
 #define SSYM(ch) [ch] = ch
 
@@ -62,16 +64,15 @@ sqli_get_token(
     KEYNAME_SET_RET_EX(ctx, arg, #_name, _name, _flags)
 #define RET_DATA_EX(toksuff, ctx, arg, _flags) \
     do { \
-        sqli_data_done(&(ctx)->lexer); \
-        (arg)->data.value = (ctx)->lexer.buf; \
+        (arg)->data.value = (ctx)->lexer.buf.data; \
         (arg)->data.tok = TOK_##toksuff; \
         (arg)->data.flags = (_flags)|SQLI_VALUE_NEEDFREE; \
-        sqli_data_start(&(ctx)->lexer, 0); \
+        detect_buf_reinit(&(ctx)->lexer.buf); \
         RET(ctx, TOK_##toksuff); \
     } while (0)
 #define RET_DATA(toksuff, ctx, arg) \
     RET_DATA_EX(toksuff, ctx, arg, 0)
-#define RET_DATA_ERROR(ctx) sqli_data_error(&(ctx)->lexer)
+#define RET_DATA_ERROR(ctx) detect_buf_deinit(&(ctx)->lexer.buf)
 #define YYCH ctx->lexer.yych
 #define YYACCEPT ctx->lexer.yyaccept
 
@@ -102,14 +103,14 @@ sqli_get_token(
           if (ctx->lexer.instring) {
               YYSETCONDITION(sqli_INSTRING);
               arg->data.flags = SQLI_DATA_NOSTART;
-              sqli_data_start(&ctx->lexer, 0);
+              detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
               goto sqli_INSTRING;
           }
           YYSETCONDITION(sqli_INITIAL);
           goto sqli_INITIAL;
       }
       <INSTRING> "''"|'""' {
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_INSTRING;
       }
       <INSTRING> ['"] => INITIAL {
@@ -117,11 +118,11 @@ sqli_get_token(
           RET_DATA(DATA, ctx, arg);
       }
       <SQUOTE> "''" {
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_SQUOTE;
       }
       <DQUOTE> '""' {
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_DQUOTE;
       }
       <SQUOTE> ['] => INITIAL {
@@ -139,7 +140,7 @@ sqli_get_token(
           RET_DATA(DATA, ctx, arg);
       }
       <INSTRING,SQUOTE,DQUOTE> . {
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto yy0;
       }
       <INSTRING,SQUOTE,DQUOTE> [^] {
@@ -149,10 +150,10 @@ sqli_get_token(
           RET(ctx, TOK_ERROR);
       }
       <NUMBER> [0-9\.eE] {
-          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+          if (!detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]))
               goto sqli_NUMBER;
           else {
-              sqli_data_error(&ctx->lexer);
+              detect_buf_deinit(&ctx->lexer.buf);
               RET(ctx, TOK_ERROR);
           }
       }
@@ -162,10 +163,10 @@ sqli_get_token(
           RET_DATA(DATA, ctx, arg);
       }
       <HEXNUMBER> [0-9a-fA-F] {
-          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+          if (!detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]))
               goto sqli_HEXNUMBER;
           else {
-              sqli_data_error(&ctx->lexer);
+              detect_buf_deinit(&ctx->lexer.buf);
               RET(ctx, TOK_ERROR);
           }
       }
@@ -175,10 +176,10 @@ sqli_get_token(
           RET_DATA(DATA, ctx, arg);
       }
       <VAR> [0-9a-zA-Z_@$] {
-          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+          if (!detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]))
               goto sqli_VAR;
           else {
-              sqli_data_error(&ctx->lexer);
+              detect_buf_deinit(&ctx->lexer.buf);
               RET(ctx, TOK_ERROR);
           }
       }
@@ -189,65 +190,65 @@ sqli_get_token(
       }
       <OPERATOR> opchar_nocomment {
   opchar_generic:
-          if (sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]))
+          if (!detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]))
               goto sqli_OPERATOR;
           else {
-              sqli_data_error(&ctx->lexer);
+              detect_buf_deinit(&ctx->lexer.buf);
               RET(ctx, TOK_ERROR);
           }
       }
       <OPERATOR> '-' {
-          assert(ctx->lexer.buf.len > 0);
-          if (ctx->lexer.buf.str[ctx->lexer.buf.len - 1] != '-')
+          assert(ctx->lexer.buf.data.len > 0);
+          if (ctx->lexer.buf.data.str[ctx->lexer.buf.data.len - 1] != '-')
               goto opchar_generic;
-          ctx->lexer.buf.len--;
+          ctx->lexer.buf.data.len--;
           YYSETCONDITION(sqli_DASHCOMMENT);
           YYSETSTATE(-1);
-          if (!ctx->lexer.buf.len) {
-              sqli_data_free(&ctx->lexer);
+          if (!ctx->lexer.buf.data.len) {
+              detect_buf_deinit(&ctx->lexer.buf);
               goto sqli_DASHCOMMENT;
           }
           goto operator_done;
       }
       <OPERATOR> '*' {
-          assert(ctx->lexer.buf.len > 0);
-          if (ctx->lexer.buf.str[ctx->lexer.buf.len - 1] != '/')
+          assert(ctx->lexer.buf.data.len > 0);
+          if (ctx->lexer.buf.data.str[ctx->lexer.buf.data.len - 1] != '/')
               goto opchar_generic;
-          ctx->lexer.buf.len--;
+          ctx->lexer.buf.data.len--;
           YYSETCONDITION(sqli_STARCOMMENT_PROBE);
           YYSETSTATE(-1);
-          if (!ctx->lexer.buf.len) {
-              sqli_data_free(&ctx->lexer);
+          if (!ctx->lexer.buf.data.len) {
+              detect_buf_deinit(&ctx->lexer.buf);
               goto sqli_STARCOMMENT_PROBE;
           }
           goto operator_done;
       }
       <OPERATOR> '/' {
-          assert(ctx->lexer.buf.len > 0);
-          if (ctx->lexer.buf.str[ctx->lexer.buf.len - 1] != '*')
+          assert(ctx->lexer.buf.data.len > 0);
+          if (ctx->lexer.buf.data.str[ctx->lexer.buf.data.len - 1] != '*')
               goto opchar_generic;
           // process unexpected "*/" construction as a space
-          ctx->lexer.buf.len--;
+          ctx->lexer.buf.data.len--;
           YYSETCONDITION(sqli_INITIAL);
           YYSETSTATE(-1);
-          if (!ctx->lexer.buf.len) {
-              sqli_data_free(&ctx->lexer);
+          if (!ctx->lexer.buf.data.len) {
+              detect_buf_deinit(&ctx->lexer.buf);
               goto sqli_INITIAL;
           }
           goto operator_done;
       }
       <OPERATOR> [^] => INITIAL {
-          assert(ctx->lexer.buf.len != 0);
+          assert(ctx->lexer.buf.data.len != 0);
           ctx->lexer.pos--;
           YYSETSTATE(-1);
   operator_done:
-          if (ctx->lexer.buf.len == 1) {
-              unsigned char prev = ctx->lexer.buf.str[0];
+          if (ctx->lexer.buf.data.len == 1) {
+              unsigned char prev = ctx->lexer.buf.data.str[0];
 
               if (prev < sizeof(selfsyms) / sizeof(selfsyms[0]) &&
                   selfsyms[prev] != 0) {
 
-                  sqli_data_free(&ctx->lexer);
+                  detect_buf_deinit(&ctx->lexer.buf);
 
                   arg->data.value.str = (char *)&selfsyms[prev];
                   arg->data.value.len = 1;
@@ -456,34 +457,34 @@ sqli_get_token(
           KEYNAME_SET_RET(ctx, arg, AND, SQLI_KEY_INSTR);
       }
       <INITIAL> opchar => OPERATOR {
-          sqli_data_start(&ctx->lexer, 0);
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_OPERATOR;
       }
       <INITIAL> ['] => SQUOTE {
-          sqli_data_start(&ctx->lexer, 0);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           goto sqli_SQUOTE;
       }
       <INITIAL> ["] => DQUOTE {
-          sqli_data_start(&ctx->lexer, 0);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           goto sqli_DQUOTE;
       }
       <INITIAL> [\.][0-9] => NUMBER {
-          sqli_data_start(&ctx->lexer, 257);
-          sqli_data_eat_char(&ctx->lexer, '.');
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+          detect_buf_add_char(&ctx->lexer.buf, '.');
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_NUMBER;
       }
       <INITIAL> '0x'[0-9a-fA-F] => HEXNUMBER {
-          sqli_data_start(&ctx->lexer, 257);
-          sqli_data_eat_char(&ctx->lexer, '0');
-          sqli_data_eat_char(&ctx->lexer, 'x');
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+          detect_buf_add_char(&ctx->lexer.buf, '0');
+          detect_buf_add_char(&ctx->lexer.buf, 'x');
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_HEXNUMBER;
       }
       <INITIAL> [0-9] => NUMBER {
-          sqli_data_start(&ctx->lexer, 257);
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_NUMBER;
       }
       <INITIAL> self {
@@ -494,8 +495,8 @@ sqli_get_token(
           RET(ctx, ctx->lexer.pos[-1]);
       }
       <INITIAL> [a-zA-Z_@] => VAR {
-          sqli_data_start(&ctx->lexer, 257);
-          sqli_data_eat_char(&ctx->lexer, ctx->lexer.pos[-1]);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
           goto sqli_VAR;
       }
       <INITIAL> [\x00] { return (0); }

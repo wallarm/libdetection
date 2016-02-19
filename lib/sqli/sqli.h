@@ -57,8 +57,7 @@ struct sqli_detect_lexer_ctx {
     int condition;
     unsigned char yych;
     unsigned char yyaccept;
-    struct detect_str buf;
-    size_t bufsiz;
+    struct detect_buf buf;
 };
 
 struct sqli_detect_ctx {
