@@ -130,6 +130,7 @@ main(int argc, char **argv)
     bool print_nstr = false;
     bool report_attacks = false;
     bool echo = false;
+    bool detect_initialized = false;
     uint64_t nstr, nattacks;
     int rc = EXIT_SUCCESS;
 
@@ -172,6 +173,7 @@ main(int argc, char **argv)
         rc = EXIT_FAILURE;
         goto done;
     }
+    detect_initialized = true;
 
     switch (action) {
     case PERF_ACTION_LIST_PARSERS:
@@ -221,6 +223,8 @@ main(int argc, char **argv)
         fprintf(stderr, "Got %"PRIu64" strings, %"PRIu64" attacks\n",
                 nstr, nattacks);
   done:
+    if (detect_initialized)
+        detect_deinit();
     free(progname);
     return (rc);
 }
