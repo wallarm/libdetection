@@ -85,3 +85,27 @@ detect_parser_find(struct detect_str *name)
         return (NULL);
     return (container_of(link, struct detect_parser_info, link)->parser);
 }
+
+void *
+detect_parser_list(const struct detect_str **name)
+{
+    struct detect_parser_info *pi;
+
+    if (detect_parsers.head == NULL)
+        return (NULL);
+    pi = container_of(detect_parsers.head->item, typeof(*pi), name);
+    *name = &pi->name;
+    return (pi);
+}
+
+void *
+detect_parser_list_next(void *ctx, const struct detect_str **name)
+{
+    struct detect_parser_info *pi = ctx;
+
+    if (pi->link.next == NULL)
+        return (NULL);
+    pi = container_of(pi->link.next->item, typeof(*pi), name);
+    *name = &pi->name;
+    return (pi);
+}

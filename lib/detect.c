@@ -53,6 +53,12 @@ detect_open(const char *parser_name)
     return (parser->open(parser));
 }
 
+const struct detect_str *
+detect_name(struct detect *detect)
+{
+    return (&detect->parser->name);
+}
+
 int
 detect_close(struct detect *detect)
 {

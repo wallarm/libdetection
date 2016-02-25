@@ -9,6 +9,11 @@
 
 #define MAXLINE 4096
 
+enum perf_action {
+    PERF_ACTION_PARSE = 0,
+    PERF_ACTION_LIST_PARSERS,
+};
+
 static void
 s_perf_dump_result(struct detect *detect)
 {
@@ -83,16 +88,32 @@ perf_usage(const char *progname)
 {
     fprintf(stderr,
             "Usage:\n"
-            "\t%s [-ehnrv] [-p parser]\n"
+            "\t%s [-Pehnrv] [-p parser]\n"
             "\n"
             "\t-h   Show this help message\n"
             "\t-v   Increase verbose level\n"
+            "\t-P   List available parsers and exit\n"
             "\t-p   Parser to use (default is sqli)\n"
             "\t-e   Echo input strings\n"
             "\t     (verbose=1: attacks only, verbose=1: all)\n"
             "\t-r   Show small report for each input string\n"
             "\t-n   Show total number of strings and attacks\n"
             , progname);
+}
+
+static int
+perf_list_parsers(void)
+{
+    void *ctx;
+    const struct detect_str *name;
+
+    printf("Parsers available:\n");
+    for (ctx = detect_parser_list(&name); ctx;
+         ctx = detect_parser_list_next(ctx, &name)) {
+
+        printf("%.*s\n", (int)name->len, name->str);
+    }
+    return (EXIT_SUCCESS);
 }
 
 int
@@ -105,6 +126,7 @@ main(int argc, char **argv)
     size_t len;
     int argval;
     unsigned verbose = 0;
+    enum perf_action action = PERF_ACTION_PARSE;
     bool print_nstr = false;
     bool report_attacks = false;
     bool echo = false;
@@ -117,8 +139,11 @@ main(int argc, char **argv)
         progname = argv[0];
     progname = strdup(progname);
 
-    while ((argval = getopt(argc, argv, "p:ehnrv")) != EOF) {
+    while ((argval = getopt(argc, argv, "Pp:ehnrv")) != EOF) {
         switch (argval) {
+        case 'P':
+            action = PERF_ACTION_LIST_PARSERS;
+            break;
         case 'p':
             snprintf(parser, sizeof(parser), "%s", optarg);
             break;
@@ -147,6 +172,15 @@ main(int argc, char **argv)
         rc = EXIT_FAILURE;
         goto done;
     }
+
+    switch (action) {
+    case PERF_ACTION_LIST_PARSERS:
+        rc = perf_list_parsers();
+        goto done;
+    default:
+        break;
+    }
+
     if ((detect = detect_open(parser)) == NULL) {
         ERR("Cannot open %s parser", parser);
         rc = EXIT_FAILURE;

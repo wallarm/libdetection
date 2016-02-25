@@ -63,7 +63,11 @@ struct detect_ctx_result {
 typedef int (*detect_finish_cb)(
     struct detect *detect, unsigned ctxnum, unsigned n_unfinished, void *arg);
 
+void *detect_parser_list(const struct detect_str **name);
+void *detect_parser_list_next(void *ctx, const struct detect_str **name);
+
 struct detect *detect_open(const char *parser);
+const struct detect_str *detect_name(struct detect *detect);
 int detect_close(struct detect *detect);
 
 int detect_set_options(struct detect *detect, const char *options);
