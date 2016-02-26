@@ -31,34 +31,36 @@ context: start_pt
         ;
 start_pt: TOK_START_PT_INJ inj
         ;
-seps:     TOK_SEP[k] {
+
+ssep: TOK_SEP[k] {
             pt_store_data(ctx, &$k);
         }
-        | seps TOK_SEP[k] {
+        ;
+strav: TOK_TRAV[k] {
             pt_store_data(ctx, &$k);
+        }
+        ;
+sroot: TOK_ROOT[r] {
+            pt_store_data(ctx, &$r);
+        }
+        ;
+sname: TOK_NAME[n] {
+            pt_store_data(ctx, &$n);
         }
         ;
 
-travs:    TOK_TRAV[k] {
-            pt_store_data(ctx, &$k);
-        }
-        | travs seps TOK_TRAV[k] {
-            pt_store_data(ctx, &$k);
-        }
+seps:     ssep
+        | seps ssep
+        ;
+travs:    strav
+        | travs seps strav
         ;
 inj_pref:
-        | inj_pref TOK_ROOT[r] seps {
-            pt_store_data(ctx, &$r);
-        }
-        | inj_pref TOK_NAME[n] seps {
-            pt_store_data(ctx, &$n);
-        }
-        | inj_pref travs seps TOK_NAME[n] seps {
-            pt_store_data(ctx, &$n);
-        }
+        | inj_pref sroot seps
+        | inj_pref sname seps
+        | inj_pref travs seps sname seps
         ;
-inj:    inj_pref travs seps TOK_ROOT[r] {
-            pt_store_data(ctx, &$r);
+inj:    inj_pref travs seps sroot {
             YYACCEPT;
         }
         ;
