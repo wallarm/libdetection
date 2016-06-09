@@ -7,7 +7,7 @@ if(RE2C_EXECUTABLE)
     set (OUT_CFILE "${CMAKE_CURRENT_BINARY_DIR}/${CFILE}")
     set (OUT_HFILE "${CMAKE_CURRENT_BINARY_DIR}/${HFILE}")
     add_custom_command(
-        OUTPUT "${OUT_CFILE}" "${OUT_FHILE}"
+        OUTPUT "${OUT_CFILE}" "${OUT_HFILE}"
         COMMAND "${RE2C_EXECUTABLE}"
         ARGS "-c" "-f"
         "-o" "${OUT_CFILE}"
