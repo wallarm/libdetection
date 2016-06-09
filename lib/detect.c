@@ -167,7 +167,7 @@ s_detect_flag_stat_free(void *p, void *user)
     struct detect_flag_stat *fs = container_of(p, typeof(*fs), flag_name);
 
     avl_tree_purge(&fs->stat_by_tokens);
-    free(fs);
+    SAFEFREE(fs);
 }
 
 static void
@@ -175,7 +175,7 @@ s_detect_flag_token_free(void *p, void *user)
 {
     struct detect_token_stat *ts = container_of(p, typeof(*ts), token_name);
 
-    free(ts);
+    SAFEFREE(ts);
 }
 
 int
@@ -197,8 +197,8 @@ detect_ctx_result_deinit(struct detect_ctx_result *res)
     avl_tree_purge(&res->stat_by_flags);
     while ((data = STAILQ_FIRST(&res->datas)) != NULL) {
         STAILQ_REMOVE_HEAD(&res->datas, link);
-        free(data->value.str);
-        free(data);
+        SAFEFREE(data->value.str);
+        SAFEFREE(data);
     }
     res->finished = 0;
     res->parse_error = 0;

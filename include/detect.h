@@ -15,6 +15,16 @@
     })
 #endif
 
+#ifndef SAFEFREE
+#define SAFEFREE(p) 		\
+	do { 					\
+		if ((p) != NULL) {	\
+			free((p)); 		\
+			(p) = NULL; 	\
+			}				\
+	} while(0)
+#endif
+
 int detect_init(void);
 int detect_deinit(void);
 

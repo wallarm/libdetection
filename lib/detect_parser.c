@@ -48,7 +48,7 @@ s_detect_parser_free(void *p, void *user)
 
     if (pi->parser->deinit != NULL)
         pi->parser->deinit();
-    free(pi);
+    SAFEFREE(pi);
 }
 
 int

@@ -61,11 +61,10 @@ detect_sqli_close(struct detect *detect)
         detect_ctx_result_deinit(ctx->base.res);
         if (ctx->pstate != NULL)
             sqli_parser_pstate_delete(ctx->pstate);
-        free(ctx);
+        SAFEFREE(ctx);
     }
-    if (detect->ctxs != NULL)
-        free(detect->ctxs);
-    free(detect);
+    SAFEFREE(detect->ctxs);
+    SAFEFREE(detect);
 
     return (0);
 }
@@ -129,8 +128,8 @@ sqli_token_data_destructor(void *token)
 {
     struct sqli_token_arg_data *data = token;
 
-    if (!!(data->flags & SQLI_VALUE_NEEDFREE) && data->value.str != NULL)
-        free(data->value.str);
+    if (!!(data->flags & SQLI_VALUE_NEEDFREE))
+        SAFEFREE(data->value.str);
     data->value.str = NULL;
     data->value.len = 0;
 }
