@@ -72,4 +72,4 @@ For ease of understanding, you can distinguish injections and commanding attacks
 
 ### Syntax
 
-Currently, we publish PoC for only SQL syntax. This allows you to test the idea against different SQL-injection attacks. To add new syntax (eg, path traversal, bash / sh, PHP, HTML5, JavaScript) you only need to describe the lexer and the BNF. So you can avoid programming in C. Just copy directory `./lib/sqli`, and then edit the files `sqli_lexer.re2c` (description lexer) and `sqli_parser.y` (syntax description in BNF). That's all you need to do. No need to write regular expressions or collecting attacks samples.
+Currently, we publish PoC for only SQL syntax. This allows you to test the idea against different SQL-injection attacks. To add new syntax (eg, path traversal, bash / sh, PHP, HTML5, JavaScript) you only need to describe the lexer and the BNF. So you can avoid programming in C. Just copy directory `./lib/sqli`, and then edit the files `sqli_lexer.re2c` (lexer description) and `sqli_parser.y` (syntax description in BNF). That's all you need to do. No need to write regular expressions or collecting attacks samples.
