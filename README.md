@@ -40,7 +40,7 @@ After that, you will get
 
 ## Extend syntaxes
 
-To add add your own module to the library, you have to
+To add your own module to the library, you have to
 
 1. Add the module code into a new directory under `lib/`. See
    `lib/sqli/sqli.c` code which implements libdetection interface
