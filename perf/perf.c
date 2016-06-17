@@ -95,7 +95,7 @@ perf_usage(const char *progname)
             "\t-P   List available parsers and exit\n"
             "\t-p   Parser to use (default is sqli)\n"
             "\t-e   Echo input strings\n"
-            "\t     (verbose=1: attacks only, verbose=1: all)\n"
+            "\t     (verbose=0: attacks only, verbose>0: all)\n"
             "\t-r   Show small report for each input string\n"
             "\t-n   Show total number of strings and attacks\n"
             , progname);
