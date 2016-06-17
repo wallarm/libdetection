@@ -71,8 +71,9 @@ main(void)
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
-        {"generic", NULL, NULL, generic_tests},
-        {"sqli", s_sqli_suite_init, s_sqli_suite_deinit, sqli_tests},
+        {.pName = "generic", .pTests = generic_tests},
+        {.pName = "sqli", .pTests = sqli_tests,
+         .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
         CU_SUITE_INFO_NULL,
     };
     CU_pRunSummary sum;
