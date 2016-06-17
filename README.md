@@ -65,7 +65,7 @@ Within the library, each parser state (where line processing begins) is called a
 
 The library supports a variety of contexts (the parser states) with two main groups - injection attacks and commanding attacks. This approach allows us to share all the attacks on the two groups suitable for subsequent analysis and attribution to vulnerabilities in the code.
 
-For example, for phpMyAdmin or similar tools, a set of parameters for query parameter will take attacks such commanding as legitimate. Such attacks will consist entirely of SQL syntax for initial parsing state: `? Query = SELECT id FROM users ...`. At the same time the defective syntax of SQL (injection attacks) in these parameters can be easily blocked, for example: `? Query = 123 UNION SELECT if FROM users - a-`.
+For example, for phpMyAdmin or similar tools, a set of parameters for query parameter will take attacks such commanding as legitimate. Such attacks will consist entirely of SQL syntax for initial parsing state: `? Query = SELECT id FROM users ...`. At the same time the defective syntax of SQL (injection attacks) in these parameters can be easily blocked, for example: `? Query = 123 UNION SELECT id FROM users - a-`.
 
 For ease of understanding, you can distinguish injections and commanding attacks in the following way. In the case of injection attacks, there is, at least, one user input to be handled entirely as data. If the case of commanding attacks any user input will contain at least one instruction.
 
