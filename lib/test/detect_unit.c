@@ -88,6 +88,7 @@ main(void)
     if ((sum = CU_get_run_summary()) == NULL ||
         sum->nSuitesFailed || sum->nTestsFailed || sum->nAssertsFailed) {
 
+        CU_cleanup_registry();
         return (EXIT_FAILURE);
     }
     CU_cleanup_registry();
