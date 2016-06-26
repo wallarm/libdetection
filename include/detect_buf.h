@@ -56,8 +56,10 @@ detect_buf_add_char(struct detect_buf *buf, unsigned char ch)
         new_allocated = 0;
     if (buf->data.len == new_allocated)
         return (EOVERFLOW);
-    if ((str = realloc(buf->data.str, new_allocated)) == NULL)
+    if ((str = realloc(buf->data.str, new_allocated)) == NULL) {
+        buf->data.str = NULL;
         return (ENOMEM);
+        };
     buf->data.str = str;
     buf->allocated = new_allocated;
     buf->data.str[buf->data.len++] = ch;
