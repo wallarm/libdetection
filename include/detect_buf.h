@@ -53,7 +53,7 @@ detect_buf_add_char(struct detect_buf *buf, unsigned char ch)
     }
     new_allocated = buf->allocated ? buf->allocated * 2 : buf->minsiz;
     if (buf->maxsiz >= 0 && new_allocated > buf->maxsiz)
-        new_allocated = 0;
+        new_allocated = buf->maxsiz;
     if (buf->data.len == new_allocated)
         return (EOVERFLOW);
     if ((str = realloc(buf->data.str, new_allocated)) == NULL)
