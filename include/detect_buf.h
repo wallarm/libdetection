@@ -28,7 +28,7 @@ detect_buf_init(
     if (!minsiz)
         minsiz = 32;
     buf->minsiz = minsiz;
-    if (maxsiz > 0 && minsiz < (size_t)maxsiz)
+    if (maxsiz > 0 && minsiz > (size_t)maxsiz)
         maxsiz = minsiz;
     buf->maxsiz = maxsiz;
     return (detect_buf_reinit(buf));
