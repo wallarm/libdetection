@@ -48,6 +48,7 @@ To add your own module to the library, you have to
 2. Make libdetection to load the module statically, see
    `TRYLOAD` in `detect_parser_init()`. Dynamic loading is not
    implemented yet.
+3. Include your module name in `lib/CMakeLists.txt` for automatic building.
 
 
 ## Formal model
