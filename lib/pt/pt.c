@@ -257,7 +257,7 @@ pt_store_data(
         info->value.str = copy;
 
         detect_ctx_result_store_data(
-            &ctx->res, &(struct detect_str){CSTR_LEN("NAME")}, &info->value);
+            &ctx->res, &(struct detect_str){CSTR_LEN("ROOT")}, &info->value);
         return (0);
     }
     default:
