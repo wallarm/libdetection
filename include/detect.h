@@ -81,6 +81,7 @@ unsigned detect_get_nctx(struct detect *detect);
 #define DETECT_ATTACK_INJ (1<<1)
 bool detect_has_attack(struct detect *detect, uint32_t *attack_types);
 int detect_ctx_disable(struct detect *detect, unsigned ctxnum);
+bool detect_ctx_has_attack(struct detect *detect, unsigned ctxnum);
 const struct detect_ctx_desc *detect_ctx_get_desc(
     struct detect *detect, unsigned ctxnum);
 const struct detect_ctx_result *detect_ctx_get_result(

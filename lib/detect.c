@@ -281,30 +281,45 @@ detect_ctx_result_store_data(
 }
 
 bool
+detect_ctx_has_attack(struct detect *detect, unsigned ctxnum)
+{
+    struct detect_ctx *ctx;
+
+    if (ctxnum >= detect->nctx)
+        return (false);
+    ctx = detect->ctxs[ctxnum];
+    if (!ctx->res->finished)
+        return (false);
+    if (ctx->res->parse_error)
+        return (false);
+    if (ctx->desc->rce)
+        return (true);
+    /*
+     * Injection. At least one instruction should present.
+     * Just test if instruction tree is not empty.
+     */
+    if (ctx->res->stat_by_flags.head != NULL)
+        return (true);
+    return (false);
+}
+
+bool
 detect_has_attack(struct detect *detect, uint32_t *attack_types)
 {
     unsigned i;
 
     *attack_types = 0;
     for (i = 0; i < detect->nctx; i++) {
-        struct detect_ctx *ctx = detect->ctxs[i];
+        struct detect_ctx *ctx;
 
-        if (!ctx->res->finished)
-            return (false);
-        if (ctx->res->parse_error)
+        if (!detect_ctx_has_attack(detect, i))
             continue;
-        if (ctx->desc->rce) {
+
+        ctx = detect->ctxs[i];
+        if (ctx->desc->rce)
             (*attack_types) |= DETECT_ATTACK_RCE;
-            continue;
-        }
-        /*
-         * Injection. At least one instruction should present.
-         * Just test if instruction tree is not empty.
-         */
-        if (ctx->res->stat_by_flags.head != NULL) {
+        else
             (*attack_types) |= DETECT_ATTACK_INJ;
-            continue;
-        }
     }
 
     return (!!(*attack_types));
