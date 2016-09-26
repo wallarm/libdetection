@@ -2,12 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <inttypes.h>
 
 #define ERR(fmt, ...) fprintf(stderr, fmt"\n", ##__VA_ARGS__)
 
 #define MAXLINE 4096
+#define MAX_DISABLED_CTXS 8
 
 enum perf_action {
     PERF_ACTION_PARSE = 0,
@@ -88,12 +90,13 @@ perf_usage(const char *progname)
 {
     fprintf(stderr,
             "Usage:\n"
-            "\t%s [-Pehnrv] [-p parser]\n"
+            "\t%s [-Pehnrv] [-p parser] [-d disabled_context]\n"
             "\n"
             "\t-h   Show this help message\n"
             "\t-v   Increase verbose level\n"
             "\t-P   List available parsers and exit\n"
             "\t-p   Parser to use (default is sqli)\n"
+            "\t-d   Context number to disable\n"
             "\t-e   Echo input strings\n"
             "\t     (verbose=0: attacks only, verbose>0: all)\n"
             "\t-r   Show small report for each input string\n"
@@ -122,6 +125,8 @@ main(int argc, char **argv)
     struct detect *detect;
     char *progname;
     char buf[MAXLINE];
+    unsigned disabled_ctxs[MAX_DISABLED_CTXS];
+    unsigned n_disabled_ctxs = 0, ictx;
     char parser[32] = "sqli";
     size_t len;
     int argval;
@@ -140,7 +145,7 @@ main(int argc, char **argv)
         progname = argv[0];
     progname = strdup(progname);
 
-    while ((argval = getopt(argc, argv, "Pp:ehnrv")) != EOF) {
+    while ((argval = getopt(argc, argv, "Pp:ehnrvd:")) != EOF) {
         switch (argval) {
         case 'P':
             action = PERF_ACTION_LIST_PARSERS;
@@ -148,6 +153,22 @@ main(int argc, char **argv)
         case 'p':
             snprintf(parser, sizeof(parser), "%s", optarg);
             break;
+        case 'd': {
+            unsigned ctx = atoi(optarg);
+
+            for (ictx = 0; ictx != n_disabled_ctxs; ictx++)
+                if (disabled_ctxs[ictx] == ctx)
+                    break;
+            if (ictx == n_disabled_ctxs) {
+                if (n_disabled_ctxs == MAX_DISABLED_CTXS) {
+                    ERR("Too many disabled contexts specified");
+                    rc = EXIT_FAILURE;
+                    goto done;
+                }
+                disabled_ctxs[n_disabled_ctxs++] = ctx;
+            }
+            break;
+        }
         case 'e':
             echo = true;
             break;
@@ -187,6 +208,25 @@ main(int argc, char **argv)
         ERR("Cannot open %s parser", parser);
         rc = EXIT_FAILURE;
         goto done;
+    }
+    for (ictx = 0; ictx != n_disabled_ctxs; ictx++) {
+        const struct detect_ctx_desc *ctx;
+        int rv;
+
+        ctx = detect_ctx_get_desc(detect, disabled_ctxs[ictx]);
+        if (ctx == NULL) {
+            ERR("Cannot get context[%u] description: %s",
+                disabled_ctxs[ictx], strerror(errno));
+            rc = EXIT_FAILURE;
+            goto done;
+        }
+        if (!!(rv = detect_ctx_disable(detect, disabled_ctxs[ictx]))) {
+            fprintf(stderr, "Cannot disable context %u[%.*s]: %s\n",
+                    disabled_ctxs[ictx], (int)ctx->name.len,
+                    ctx->name.str, strerror(rv));
+            rc = EXIT_FAILURE;
+            goto done;
+        }
     }
     nstr = 0;
     nattacks = 0;
