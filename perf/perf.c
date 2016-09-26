@@ -107,14 +107,28 @@ perf_usage(const char *progname)
 static int
 perf_list_parsers(void)
 {
-    void *ctx;
+    void *list;
     const struct detect_str *name;
 
     printf("Parsers available:\n");
-    for (ctx = detect_parser_list(&name); ctx;
-         ctx = detect_parser_list_next(ctx, &name)) {
+    for (list = detect_parser_list(&name); list;
+         list = detect_parser_list_next(list, &name)) {
+        struct detect *detect;
 
         printf("%.*s\n", (int)name->len, name->str);
+        if ((detect = detect_open(name->str)) != NULL) {
+            unsigned i, nctx;
+
+            nctx = detect_get_nctx(detect);
+            for (i = 0; i != nctx; i++) {
+                const struct detect_ctx_desc *ctx;
+
+                ctx = detect_ctx_get_desc(detect, i);
+                printf("\tContext %u: %.*s (%s)\n",
+                       i, (int)ctx->name.len, ctx->name.str,
+                       ctx->rce ? "rce" : "inj");
+            }
+        }
     }
     return (EXIT_SUCCESS);
 }
