@@ -91,11 +91,14 @@ detect_set_finish_cb(struct detect *detect, detect_finish_cb cb, void *arg)
 int
 detect_start(struct detect *detect)
 {
+    unsigned i;
     int rc;
 
     if (detect->started)
         return (EINVAL);
 
+    for (i = 0; i < detect->nctx; i++)
+        detect->ctxs[i]->res->finished = detect->ctxs[i]->res->disabled;
     if (!!(rc = detect->parser->start(detect)))
         return (rc);
 
@@ -132,6 +135,15 @@ detect_ctx_get_desc(struct detect *detect, unsigned ctxnum)
         return (NULL);
     }
     return (detect->ctxs[ctxnum]->desc);
+}
+
+int
+detect_ctx_disable(struct detect *detect, unsigned ctxnum)
+{
+    if (detect->started && ctxnum >= detect->nctx)
+        return (EINVAL);
+    detect->ctxs[ctxnum]->res->disabled = true;
+    return (0);
 }
 
 const struct detect_ctx_result *

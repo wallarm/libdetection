@@ -117,6 +117,8 @@ detect_pt_start(struct detect *detect)
     for (i = 0; i < detect->nctx; i++) {
         struct pt_detect_ctx *ctx = (void *)detect->ctxs[i];
 
+        if (ctx->res.finished)
+            continue;
         ctx->pstate = pt_parser_pstate_new();
         pt_lexer_init(&ctx->lexer);
         if (detect_pt_push_token(

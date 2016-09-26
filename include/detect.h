@@ -57,6 +57,7 @@ struct detect_ctx_result {
     avl_tree_t stat_by_flags; /* struct detect_flag_stat */
     STAILQ_HEAD(, detect_data) datas;
     unsigned finished:1;
+    unsigned disabled:1;
     unsigned parse_error:1;
 };
 
@@ -79,6 +80,7 @@ unsigned detect_get_nctx(struct detect *detect);
 #define DETECT_ATTACK_RCE (1<<0)
 #define DETECT_ATTACK_INJ (1<<1)
 bool detect_has_attack(struct detect *detect, uint32_t *attack_types);
+int detect_ctx_disable(struct detect *detect, unsigned ctxnum);
 const struct detect_ctx_desc *detect_ctx_get_desc(
     struct detect *detect, unsigned ctxnum);
 const struct detect_ctx_result *detect_ctx_get_result(

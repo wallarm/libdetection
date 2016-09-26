@@ -143,6 +143,9 @@ detect_sqli_start(struct detect *detect)
     for (i = 0; i < detect->nctx; i++) {
         struct sqli_detect_ctx *ctx = (void *)detect->ctxs[i];
 
+        if (ctx->res.finished)
+            continue;
+
         ctx->pstate = sqli_parser_pstate_new();
         sqli_lexer_init(&ctx->lexer);
         if (detect_sqli_push_token(
