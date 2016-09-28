@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #include <avl.h>
-#include <queue.h>
+#include <sys/queue.h>
 
 #ifndef container_of
 #define container_of(ptr, type, member)                         \
