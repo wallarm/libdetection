@@ -1,0 +1,5 @@
+libdetection (0.1.0-1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Alexey Remizov <ar@wallarm.com>  Wed, 28 Sep 2016 16:55:28 +0300
