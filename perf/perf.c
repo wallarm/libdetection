@@ -1,4 +1,4 @@
-#include <detect.h>
+#include <detect/detect.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

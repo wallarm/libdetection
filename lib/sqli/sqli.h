@@ -1,7 +1,7 @@
 #ifndef SQLI_H
 #define SQLI_H
 
-#include <detect_parser.h>
+#include <detect/detect_parser.h>
 #include <stdint.h>
 
 struct sqli_detect_ctx;

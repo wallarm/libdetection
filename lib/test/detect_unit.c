@@ -1,5 +1,5 @@
 #include <CUnit/Basic.h>
-#include <detect.h>
+#include <detect/detect.h>
 #include <stdlib.h>
 
 #define STR_LEN_ARGS(str) str, sizeof(str) - 1

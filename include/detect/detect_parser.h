@@ -1,7 +1,7 @@
 #ifndef DETECT_PARSER_H
 #define DETECT_PARSER_H
 
-#include <detect.h>
+#include "detect.h"
 #include "detect_buf.h"
 
 #define DETECT_HIDDEN __attribute__ ((visibility ("hidden")))

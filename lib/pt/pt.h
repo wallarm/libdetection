@@ -1,7 +1,7 @@
 #ifndef PATHTRAVERSAL_H
 #define PATHTRAVERSAL_H
 
-#include <detect_parser.h>
+#include <detect/detect_parser.h>
 
 struct pt_detect_ctx;
 #include "pt_parser.h"
