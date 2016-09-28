@@ -8,5 +8,9 @@ set (CMAKE_C_FLAGS "-Wall -std=gnu99 -O0 -g ${CMAKE_C_FLAGS}")
 include(CTest)
 include(GNUInstallDirs)
 
+if (NOT ENABLE_STATIC AND NOT ENABLE_SHARED)
+  set (ENABLE_SHARED ON)
+endif()
+
 add_subdirectory(lib)
 add_subdirectory(perf)

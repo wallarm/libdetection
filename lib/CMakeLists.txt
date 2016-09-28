@@ -28,13 +28,34 @@ foreach (PARSER ${PARSERS})
   add_subdirectory(${PARSER})
 endforeach()
 
-add_library(${TARGET} ${SOURCES})
-target_link_libraries(${TARGET} avl ${PARSERS_TARGETS})
-set_target_properties(${TARGET} PROPERTIES
-  VERSION ${TARGET_VERSION_FULL}
-  SOVERSION ${TARGET_VERSION}
-)
-install(TARGETS ${TARGET}
+if (ENABLE_SHARED)
+  set (SHARED_TARGET ${TARGET})
+  if (ENABLE_STATIC)
+    set (STATIC_TARGET ${TARGET}_static)
+  else()
+    set (STATIC_TARGET)
+  endif()
+else()
+  set (SHARED_TARGET)
+  set (STATIC_TARGET ${TARGET})
+endif()
+
+set (LIB_TARGETS ${STATIC_TARGET} ${SHARED_TARGET})
+
+if (ENABLE_SHARED)
+  add_library(${SHARED_TARGET} SHARED ${SOURCES})
+  target_link_libraries(${SHARED_TARGET} avl ${PARSERS_TARGETS})
+  set_target_properties(${SHARED_TARGET} PROPERTIES
+    VERSION ${TARGET_VERSION_FULL}
+    SOVERSION ${TARGET_VERSION}
+  )
+endif()
+if (ENABLE_STATIC)
+  add_library(${STATIC_TARGET} STATIC ${SOURCES})
+  target_link_libraries(${STATIC_TARGET} avl ${PARSERS_TARGETS})
+  set_target_properties(${STATIC_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
+endif()
+install(TARGETS ${LIB_TARGETS}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY ../include/detect DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
