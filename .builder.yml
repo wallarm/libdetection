@@ -1,0 +1,9 @@
+---
+source:
+  original: all
+dists:
+  - wheezy
+  - jessie
+repos:
+  wallarm:
+    dev: true
