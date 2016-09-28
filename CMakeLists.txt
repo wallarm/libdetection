@@ -6,6 +6,7 @@ project (PoC-Detect C)
 set (CMAKE_C_FLAGS "-Wall -std=gnu99 -O0 -g ${CMAKE_C_FLAGS}")
 
 include(CTest)
+include(GNUInstallDirs)
 
 add_subdirectory(lib)
 add_subdirectory(perf)
