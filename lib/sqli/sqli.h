@@ -2,6 +2,7 @@
 #define SQLI_H
 
 #include <detect/detect_parser.h>
+#include <detect/detect_re2c.h>
 #include <stdint.h>
 
 struct sqli_detect_ctx;
@@ -46,11 +47,9 @@ DETECT_HIDDEN void sqli_token_data_destructor(void *token);
 struct sqli_detect_lexer_ctx {
     unsigned instring:1;
 
+    struct detect_re2c re2c;
+
     struct sqli_pending_token pending[MAX_PENDING_TOKENS];
-    const unsigned char *data;
-    const unsigned char *start;
-    const unsigned char *pos;
-    size_t siz;
     unsigned pending_first;
     unsigned pending_last;
     int state;

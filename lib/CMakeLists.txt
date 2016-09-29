@@ -12,6 +12,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 set (SOURCES
   detect.c
   detect_util.c
+  detect_re2c.c
   detect_parser.c
 )
 

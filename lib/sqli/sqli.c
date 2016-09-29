@@ -103,6 +103,7 @@ static void
 sqli_lexer_init(struct sqli_detect_lexer_ctx *lexer)
 {
     memset(lexer, 0, sizeof(*lexer));
+    detect_re2c_init(&lexer->re2c);
     lexer->state = -1;
 }
 
@@ -122,6 +123,7 @@ sqli_lexer_deinit(struct sqli_detect_lexer_ctx *lexer)
         SQLI_PENDING_SHIFT(lexer->pending_first);
     }
     lexer->pending_last = lexer->pending_first;
+    detect_re2c_deinit(&lexer->re2c);
 }
 
 void
@@ -181,14 +183,7 @@ static int
 sqli_lexer_add_data(
     struct sqli_detect_ctx *ctx, const void *data, size_t siz, bool fin)
 {
-    /* TODO: add support of stream-based parsing */
-
-    ctx->lexer.data = data;
-    ctx->lexer.siz = siz;
-    ctx->lexer.start = data;
-    ctx->lexer.pos = data;
-
-    return (0);
+    return (detect_re2c_add_data(&ctx->lexer.re2c, data, siz, fin));
 }
 
 static int
@@ -199,36 +194,33 @@ detect_sqli_add_data(
     union sqli_token_arg token_arg;
     int rv = 0;
 
-    /* TODO: add support of stream-based parsing */
-    assert(fin);
-    /* TODO: remove this ugly hack: stream-based parsing is needed */
-    assert(((char *)data)[siz] == 0);
-
     for (i = 0; i < detect->nctx; i++) {
         struct sqli_detect_ctx *ctx = (void *)detect->ctxs[i];
+        int token;
 
         if (ctx->res.finished)
             continue;
         sqli_lexer_add_data(ctx, data, siz, fin);
         do {
-            int token;
-
             memset(&token_arg, 0, sizeof(token_arg));
             token = sqli_get_token(ctx, &token_arg);
 
-            /* TODO: add support of stream-based parsing */
-            assert (token >= 0);
-
-            if (token != 0 && token != TOK_ERROR) {
-                ctx->has_any_tokens = true;
-                if ((rv = detect_sqli_push_token(ctx, token, &token_arg)) != 0)
-                    goto done;
+            if (token > 0) {
+                if (token != TOK_ERROR) {
+                    ctx->has_any_tokens = true;
+                    if ((rv = detect_sqli_push_token(ctx, token, &token_arg)) != 0)
+                        goto done;
+                }
+            } else if (token < 0 && token != -EAGAIN) {
+                /* fatal error */
+                rv = -token;
+                goto done;
             }
 
             /* We stop parsing with success on end of data */
             if (!ctx->res.finished) {
-                if ((token == 0 && token != TOK_ERROR) ||
-                    ctx->lexer.pos - ctx->lexer.data >= ctx->lexer.siz) {
+                if (token == 0 || token == TOK_ERROR ||
+                    (token == -EAGAIN && fin)) {
 
                     /* We push $end to the parser */
                     detect_sqli_push_token(ctx, 0, NULL);
@@ -244,7 +236,7 @@ detect_sqli_add_data(
                          /* || !ctx->has_any_tokens */);
                 }
             }
-        } while (!ctx->res.finished);
+        } while (!ctx->res.finished && token != -EAGAIN);
     }
 
   done:
