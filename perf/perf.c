@@ -246,19 +246,25 @@ main(int argc, char **argv)
     nattacks = 0;
     while (fgets(buf, sizeof(buf), stdin) != NULL) {
         bool has_attack;
+        bool multiline;
         uint32_t attack_types;
 
         len = strlen(buf);
         if (len > 0 && buf[len - 1] == '\n') {
-            buf[--len] = 0;
+            --len;
             if (len > 0 && buf[len - 1] == '\r')
-                buf[--len] = 0;
+                --len;
         }
-        /* skip empty & comment lines */
-        if (len == 0 || buf[0] == '#' || buf[0] == 0)
+        /* skip comment lines */
+        if (len != 0 && buf[0] == '#')
             continue;
+        multiline = (len != 0 && buf[len - 1] == '\\');
+        if (multiline)
+            --len;
         detect_start(detect);
-        detect_add_data(detect, buf, len, true);
+        detect_add_data(detect, buf, len, !multiline);
+        if (multiline)
+            continue;
         has_attack = detect_has_attack(detect, &attack_types);
         if (report_attacks)
             s_report_attack(nstr, has_attack, attack_types);
