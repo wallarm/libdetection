@@ -1,6 +1,8 @@
 #include "pt.h"
 #include "pt_lexer.h"
 
+/*!max:re2c */
+
 static int
 pt_name_end(struct pt_detect_ctx *ctx, union pt_token_arg *arg)
 {
@@ -8,6 +10,7 @@ pt_name_end(struct pt_detect_ctx *ctx, union pt_token_arg *arg)
     arg->data.tok = TOK_NAME;
     arg->data.flags = PT_VALUE_NEEDFREE;
     detect_buf_reinit(&ctx->lexer.buf);
+    DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
     return (TOK_NAME);
 }
 
@@ -19,6 +22,7 @@ pt_root(struct pt_detect_ctx *ctx, union pt_token_arg *arg,
     arg->data.value.len = len;
     arg->data.tok = TOK_ROOT;
     arg->data.flags = 0;
+    DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
     return (TOK_ROOT);
 }
 
@@ -26,8 +30,8 @@ int
 pt_get_token(
     struct pt_detect_ctx *ctx, union pt_token_arg *arg)
 {
-    const unsigned char *end = ctx->lexer.data + ctx->lexer.siz;
-    const unsigned char *marker, *ctxmarker;
+    const unsigned char *end;
+    int rv;
 
     switch (ctx->pending) {
     case PT_PENDING_SEP:
@@ -42,6 +46,9 @@ pt_get_token(
         break;
     }
 
+    if ((rv = detect_re2c_prepare_input(&ctx->lexer.re2c, &end, YYMAXFILL)) != 0)
+        return (-rv);
+
 #define YYGETSTATE() ctx->lexer.state
 #define YYSETSTATE(st) \
     ({ \
@@ -53,16 +60,17 @@ pt_get_token(
 #define YYACCEPT ctx->lexer.yyaccept
 #define CSTR(cstr) cstr, sizeof(cstr) - 1
 
-    /*!max:re2c */
     /*!re2c
-      re2c:define:YYCTYPE  = "unsigned char";
-      re2c:define:YYCURSOR = ctx->lexer.pos;
-      re2c:define:YYMARKER = marker;
-      re2c:define:YYCTXMARKER = ctxmarker;
+      re2c:define:YYCTYPE  = "DETECT_RE2C_YYCTYPE";
+      re2c:define:YYCURSOR = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c);
+      re2c:define:YYMARKER = DETECT_RE2C_YYMARKER(&ctx->lexer.re2c);
+      re2c:define:YYCTXMARKER = DETECT_RE2C_YYCTXMARKER(&ctx->lexer.re2c);
       re2c:define:YYLIMIT  = end;
       re2c:define:YYCONDTYPE = PT_LEXER_CONDTYPE;
-      re2c:yyfill:enable   = 0;
-      re2c:yyfill:check    = 0;
+      re2c:define:YYFILL   = "DETECT_RE2C_YYFILL(&ctx->lexer.re2c, &end, @@, YYMAXFILL);";
+      re2c:define:YYFILL:naked = 1;
+      re2c:yyfill:enable   = 1;
+      re2c:yyfill:check    = 1;
       re2c:yych:conversion = 0;
       re2c:indent:top      = 1;
       re2c:variable:yych   = YYCH;
@@ -89,7 +97,8 @@ pt_get_token(
           return (pt_name_end(ctx, arg));
       }
       <NAME> [^] {
-          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
+          detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto pt_NAME;
       }
       <INITIAL> dir_sep {
@@ -210,7 +219,8 @@ pt_get_token(
       <INITIAL> [\x00] { return (0); }
       <INITIAL> [^] => NAME {
           detect_buf_init(&ctx->lexer.buf, 32, 1024);
-          detect_buf_add_char(&ctx->lexer.buf, ctx->lexer.pos[-1]);
+          detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto pt_NAME;
       }
     */

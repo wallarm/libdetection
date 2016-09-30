@@ -62,6 +62,7 @@ static void
 pt_lexer_init(struct pt_detect_lexer_ctx *lexer)
 {
     memset(lexer, 0, sizeof(*lexer));
+    detect_re2c_init(&lexer->re2c);
     lexer->state = -1;
 }
 
@@ -69,6 +70,7 @@ static void
 pt_lexer_deinit(struct pt_detect_lexer_ctx *lexer)
 {
     detect_buf_deinit(&lexer->buf);
+    detect_re2c_deinit(&lexer->re2c);
 }
 
 void
@@ -156,14 +158,7 @@ static int
 pt_lexer_add_data(
     struct pt_detect_ctx *ctx, const void *data, size_t siz, bool fin)
 {
-    /* TODO: add support of stream-based parsing */
-
-    ctx->lexer.data = data;
-    ctx->lexer.siz = siz;
-    ctx->lexer.start = data;
-    ctx->lexer.pos = data;
-
-    return (0);
+    return (detect_re2c_add_data(&ctx->lexer.re2c, data, siz, fin));
 }
 
 static int
@@ -174,29 +169,26 @@ detect_pt_add_data(
     union pt_token_arg token_arg;
     int rv = 0;
 
-    /* TODO: add support of stream-based parsing */
-    assert(fin);
-    /* TODO: remove this ugly hack: stream-based parsing is needed */
-    assert(((char *)data)[siz] == 0);
-
     for (i = 0; i < detect->nctx; i++) {
         struct pt_detect_ctx *ctx = (void *)detect->ctxs[i];
+        int token;
 
         if (ctx->res.finished)
             continue;
         pt_lexer_add_data(ctx, data, siz, fin);
         do {
-            int token;
-
             memset(&token_arg, 0, sizeof(token_arg));
             token = pt_get_token(ctx, &token_arg);
 
-            /* TODO: add support of stream-based parsing */
-            assert (token >= 0);
-
-            if ((rv = detect_pt_push_token(ctx, token, &token_arg)) != 0)
+            if (token >= 0) {
+                if ((rv = detect_pt_push_token(ctx, token, &token_arg)) != 0)
+                    goto done;
+            } else if (token != -EAGAIN) {
+                /* fatal error */
+                rv = -token;
                 goto done;
-        } while (!ctx->res.finished);
+            }
+        } while (!ctx->res.finished && token != -EAGAIN);
     }
 
   done:

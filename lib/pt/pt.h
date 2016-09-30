@@ -2,6 +2,7 @@
 #define PATHTRAVERSAL_H
 
 #include <detect/detect_parser.h>
+#include <detect/detect_re2c.h>
 
 struct pt_detect_ctx;
 #include "pt_parser.h"
@@ -25,10 +26,7 @@ union pt_token_arg {
 struct pt_detect_lexer_ctx {
     unsigned instring:1;
 
-    const unsigned char *data;
-    const unsigned char *start;
-    const unsigned char *pos;
-    size_t siz;
+    struct detect_re2c re2c;
     int state;
     int condition;
     unsigned char yych;
