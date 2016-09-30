@@ -147,7 +147,6 @@ detect_pt_stop(struct detect *detect)
 
         pt_parser_pstate_delete(ctx->pstate);
         ctx->pstate = NULL;
-        ctx->has_any_tokens = false;
         pt_lexer_deinit(&ctx->lexer);
         detect_ctx_result_deinit(&ctx->res);
     }

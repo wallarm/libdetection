@@ -24,8 +24,6 @@ union pt_token_arg {
 };
 
 struct pt_detect_lexer_ctx {
-    unsigned instring:1;
-
     struct detect_re2c re2c;
     int state;
     int condition;
@@ -39,7 +37,6 @@ struct pt_detect_ctx {
 #define PT_PENDING_SEP 1
 #define PT_PENDING_END 2
     unsigned pending;
-    unsigned has_any_tokens:1;
     struct detect *detect;
     pt_parser_pstate *pstate;
     struct pt_detect_lexer_ctx lexer;
