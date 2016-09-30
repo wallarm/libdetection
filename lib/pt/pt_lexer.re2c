@@ -31,6 +31,7 @@ pt_get_token(
     struct pt_detect_ctx *ctx, union pt_token_arg *arg)
 {
     const unsigned char *end;
+    unsigned char yych/*, yyaccept*/;
     int rv;
 
     switch (ctx->pending) {
@@ -56,8 +57,6 @@ pt_get_token(
     })
 #define YYGETCONDITION() ctx->lexer.condition
 #define YYSETCONDITION(cond) ({ctx->lexer.condition = (cond);})
-#define YYCH ctx->lexer.yych
-#define YYACCEPT ctx->lexer.yyaccept
 #define CSTR(cstr) cstr, sizeof(cstr) - 1
 
     /*!re2c
@@ -73,8 +72,8 @@ pt_get_token(
       re2c:yyfill:check    = 1;
       re2c:yych:conversion = 0;
       re2c:indent:top      = 1;
-      re2c:variable:yych   = YYCH;
-      re2c:variable:yyaccept = YYACCEPT;
+      re2c:variable:yych   = yych;
+      re2c:variable:yyaccept = yyaccept;
       re2c:condprefix      = pt_;
       re2c:condenumprefix  = pt_;
 

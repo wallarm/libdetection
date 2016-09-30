@@ -29,8 +29,6 @@ struct pt_detect_lexer_ctx {
     struct detect_re2c re2c;
     int state;
     int condition;
-    unsigned char yych;
-    unsigned char yyaccept;
     struct detect_buf buf;
 };
 
