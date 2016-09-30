@@ -54,8 +54,6 @@ struct sqli_detect_lexer_ctx {
     unsigned pending_last;
     int state;
     int condition;
-    unsigned char yych;
-    unsigned char yyaccept;
     struct detect_buf buf;
 };
 

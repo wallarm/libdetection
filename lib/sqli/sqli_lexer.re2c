@@ -21,6 +21,7 @@ sqli_get_token(
     struct sqli_detect_ctx *ctx, union sqli_token_arg *arg)
 {
     const unsigned char *end;
+    unsigned char yych, yyaccept;
     int rv;
 
     if (ctx->lexer.pending[ctx->lexer.pending_first].tok > 0) {
@@ -74,8 +75,6 @@ sqli_get_token(
 #define RET_DATA(toksuff, ctx, arg) \
     RET_DATA_EX(toksuff, ctx, arg, 0)
 #define RET_DATA_ERROR(ctx) detect_buf_deinit(&(ctx)->lexer.buf)
-#define YYCH ctx->lexer.yych
-#define YYACCEPT ctx->lexer.yyaccept
 
     /*!re2c
       re2c:define:YYCTYPE  = "DETECT_RE2C_YYCTYPE";
@@ -90,8 +89,8 @@ sqli_get_token(
       re2c:yyfill:check    = 1;
       re2c:yych:conversion = 0;
       re2c:indent:top      = 1;
-      re2c:variable:yych   = YYCH;
-      re2c:variable:yyaccept = YYACCEPT;
+      re2c:variable:yych   = yych;
+      re2c:variable:yyaccept = yyaccept;
       re2c:condprefix      = sqli_;
       re2c:condenumprefix  = sqli_;
 
