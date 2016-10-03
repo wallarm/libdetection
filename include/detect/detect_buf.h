@@ -37,8 +37,10 @@ detect_buf_init(
 static inline void
 detect_buf_deinit(struct detect_buf *buf)
 {
-    if (buf->data.str != NULL)
+    if (buf->data.str != NULL) {
         free(buf->data.str);
+        buf->data.str = NULL;
+    }
 }
 
 static inline int
