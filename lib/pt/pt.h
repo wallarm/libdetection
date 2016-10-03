@@ -5,7 +5,6 @@
 #include <detect/detect_re2c.h>
 
 struct pt_detect_ctx;
-#include "pt_parser.h"
 
 enum PT_CTX {
     PT_CTX_INJECTION = 0,
@@ -19,16 +18,14 @@ struct pt_token_arg_data {
     int tok;
 };
 
-union pt_token_arg {
-    struct pt_token_arg_data data;
-};
-
 struct pt_detect_lexer_ctx {
     struct detect_re2c re2c;
     int state;
     int condition;
     struct detect_buf buf;
 };
+
+#include "pt_parser.h"
 
 struct pt_detect_ctx {
     struct detect_ctx base;
@@ -44,7 +41,7 @@ struct pt_detect_ctx {
 };
 
 DETECT_HIDDEN int pt_get_token(
-    struct pt_detect_ctx *ctx, union pt_token_arg *arg);
+    struct pt_detect_ctx *ctx, union PT_PARSER_STYPE *arg);
 DETECT_HIDDEN void pt_token_data_destructor(void *token);
 DETECT_HIDDEN int pt_store_data(
     struct pt_detect_ctx *ctx, struct pt_token_arg_data *info);

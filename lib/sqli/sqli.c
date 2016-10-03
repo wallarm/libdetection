@@ -191,7 +191,7 @@ detect_sqli_add_data(
     struct detect *detect, const void *data, size_t siz, bool fin)
 {
     unsigned i;
-    union sqli_token_arg token_arg;
+    union SQLI_PARSER_STYPE token_arg;
     int rv = 0;
 
     for (i = 0; i < detect->nctx; i++) {

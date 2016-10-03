@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 struct sqli_detect_ctx;
-#include "sqli_parser.h"
 
 enum SQLI_CTX {
     SQLI_CTX_DATA = 0,
@@ -27,9 +26,7 @@ struct sqli_token_arg_data {
     int tok;
 };
 
-union sqli_token_arg {
-    struct sqli_token_arg_data data;
-};
+#include "sqli_parser.h"
 
 #define MAX_PENDING_TOKENS 1
 #define SQLI_PENDING_NEXT(idx) \
@@ -38,7 +35,7 @@ union sqli_token_arg {
 
 struct sqli_pending_token {
     int tok;
-    union sqli_token_arg arg;
+    union SQLI_PARSER_STYPE arg;
     void (*destructor)(void *token);
 };
 
@@ -69,7 +66,7 @@ struct sqli_detect_ctx {
 };
 
 DETECT_HIDDEN int sqli_get_token(
-    struct sqli_detect_ctx *ctx, union sqli_token_arg *arg);
+    struct sqli_detect_ctx *ctx, union SQLI_PARSER_STYPE *arg);
 
 DETECT_HIDDEN int sqli_store_data(
     struct sqli_detect_ctx *ctx, struct sqli_token_arg_data *info);

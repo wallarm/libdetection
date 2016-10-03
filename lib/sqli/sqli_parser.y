@@ -13,7 +13,9 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %define api.push-pull push
 %define api.prefix {sqli_parser_}
 %parse-param {struct sqli_detect_ctx *ctx}
-%define api.value.type {union sqli_token_arg}
+%union {
+    struct sqli_token_arg_data data;
+}
 %define lr.type lalr
 
 %type <data> data_name data_name_only

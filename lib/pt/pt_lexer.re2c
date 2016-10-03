@@ -4,7 +4,7 @@
 /*!max:re2c */
 
 static int
-pt_name_end(struct pt_detect_ctx *ctx, union pt_token_arg *arg)
+pt_name_end(struct pt_detect_ctx *ctx, union PT_PARSER_STYPE *arg)
 {
     arg->data.value = ctx->lexer.buf.data;
     arg->data.tok = TOK_NAME;
@@ -15,7 +15,7 @@ pt_name_end(struct pt_detect_ctx *ctx, union pt_token_arg *arg)
 }
 
 static int
-pt_root(struct pt_detect_ctx *ctx, union pt_token_arg *arg,
+pt_root(struct pt_detect_ctx *ctx, union PT_PARSER_STYPE *arg,
         const char *name, size_t len)
 {
     arg->data.value.str = (void *)name;
@@ -28,7 +28,7 @@ pt_root(struct pt_detect_ctx *ctx, union pt_token_arg *arg,
 
 int
 pt_get_token(
-    struct pt_detect_ctx *ctx, union pt_token_arg *arg)
+    struct pt_detect_ctx *ctx, union PT_PARSER_STYPE *arg)
 {
     const unsigned char *end;
     unsigned char yych/*, yyaccept*/;

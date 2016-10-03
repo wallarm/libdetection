@@ -12,7 +12,9 @@ pt_parser_error(struct pt_detect_ctx *ctx, const char *s)
 %define api.push-pull push
 %define api.prefix {pt_parser_}
 %parse-param {struct pt_detect_ctx *ctx}
-%define api.value.type {union pt_token_arg}
+%union {
+    struct pt_token_arg_data data;
+}
 
 %token TOK_START_PT_INJ
 %token <data> TOK_SEP TOK_TRAV

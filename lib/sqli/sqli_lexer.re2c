@@ -18,7 +18,7 @@ static const unsigned char selfsyms[] = {
 
 int
 sqli_get_token(
-    struct sqli_detect_ctx *ctx, union sqli_token_arg *arg)
+    struct sqli_detect_ctx *ctx, union SQLI_PARSER_STYPE *arg)
 {
     const unsigned char *end;
     unsigned char yych, yyaccept;
