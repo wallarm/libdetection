@@ -288,7 +288,7 @@ detect_ctx_has_attack(struct detect *detect, unsigned ctxnum)
     if (ctxnum >= detect->nctx)
         return (false);
     ctx = detect->ctxs[ctxnum];
-    if (!ctx->res->finished)
+    if (ctx->res->disabled || !ctx->res->finished)
         return (false);
     if (ctx->res->parse_error)
         return (false);
