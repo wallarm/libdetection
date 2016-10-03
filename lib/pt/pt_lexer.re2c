@@ -67,6 +67,7 @@ pt_get_token(
       re2c:define:YYLIMIT  = end;
       re2c:define:YYCONDTYPE = PT_LEXER_CONDTYPE;
       re2c:define:YYFILL   = "DETECT_RE2C_YYFILL(&ctx->lexer.re2c, &end, @@, YYMAXFILL);";
+      re2c:define:YYFILL@len = @@ ;
       re2c:define:YYFILL:naked = 1;
       re2c:yyfill:enable   = 1;
       re2c:yyfill:check    = 1;
