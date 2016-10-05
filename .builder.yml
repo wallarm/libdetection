@@ -4,6 +4,7 @@ source:
 dists:
   - wheezy
   - jessie
+  - trusty
 repos:
   wallarm:
     dev: true
