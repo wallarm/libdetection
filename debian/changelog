@@ -1,3 +1,9 @@
+libdetection (0.1.0-3) UNRELEASED; urgency=medium
+
+  * 
+
+ -- Alexey Remizov <ar@wallarm.com>  Wed, 05 Oct 2016 16:15:24 +0300
+
 libdetection (0.1.0-2) unstable; urgency=medium
 
   * Build for trusty.
