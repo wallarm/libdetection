@@ -10,11 +10,20 @@ Package: libdetection-dev
 Section: libdevel
 Architecture: all
 Depends: libdetection (= ${binary:Version})
-Description: Signature-free approach library to detect attacks
+Description: Development files for library to detect attacks
  Extendable library for detection syntaxes by formal notations. Can be used to
  detect injections and commanding attacks such as SQLi and others. Does not
  require attacks samples to learn.
- 
+
+Package: libdetection-utils
+Section: utils
+Architecture: all
+Depends: libdetection (= ${binary:Version})
+Description: Utilities for signature-free approach library to detect attacks
+ Extendable library for detection syntaxes by formal notations. Can be used to
+ detect injections and commanding attacks such as SQLi and others. Does not
+ require attacks samples to learn.
+
 Package: libdetection
 Architecture: amd64
 Depends: ${shlibs:Depends}, ${misc:Depends}
