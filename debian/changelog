@@ -1,9 +1,9 @@
-libdetection (0.2.0-1) UNRELEASED; urgency=medium
+libdetection (0.2.0-1) unstable; urgency=medium
 
   * Build version 0.2.0 from upstream.
   * Added package libdetection-utils containing libdetection-perf.
 
- -- Alexey Remizov <ar@wallarm.com>  Wed, 05 Oct 2016 16:15:24 +0300
+ -- Alexey Remizov <ar@wallarm.com>  Fri, 25 Nov 2016 13:42:25 +0300
 
 libdetection (0.1.0-2) unstable; urgency=medium
 
