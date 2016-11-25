@@ -1,5 +1,5 @@
 
-set (TARGET "perf")
+set (TARGET "libdetection_perf")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
@@ -12,3 +12,5 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/vg.in"
 
 add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET} detection)
+install(TARGETS ${LIB_TARGETS}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
