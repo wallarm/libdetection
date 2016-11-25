@@ -1,3 +1,9 @@
+libdetection (0.2.0-2) UNRELEASED; urgency=medium
+
+  * 
+
+ -- Alexey Remizov <ar@wallarm.com>  Fri, 25 Nov 2016 13:42:36 +0300
+
 libdetection (0.2.0-1) unstable; urgency=medium
 
   * Build version 0.2.0 from upstream.
