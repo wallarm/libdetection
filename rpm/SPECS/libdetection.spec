@@ -1,6 +1,6 @@
 Name: libdetection
 Version: 0.2.0
-Release: 4
+Release: 5
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
@@ -68,6 +68,8 @@ require attacks samples to learn.
 %postun -p /sbin/ldconfig
 
 %changelog
+* Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-5
+- no changes yet
 * Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-4
 - Fix devel package dependencies.
 * Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-2
