@@ -2,9 +2,12 @@
 source:
   original: all
 dists:
+  - centos6
+  - centos7
   - wheezy
   - jessie
   - trusty
 repos:
   wallarm:
     dev: true
+  wallarm-node:
