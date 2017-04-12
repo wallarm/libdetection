@@ -69,8 +69,6 @@ require attacks samples to learn.
 
 %changelog
 * Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-4
-- no changes yet.
-* Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-3
 - Fix devel package dependencies.
 * Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-2
 - Initial release.
