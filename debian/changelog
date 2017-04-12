@@ -1,3 +1,9 @@
+libdetection (0.2.0-3) UNRELEASED; urgency=medium
+
+  *
+
+ -- Alexander Golovko <ag@wallarm.com>  Wed, 12 Apr 2017 10:23:11 +0300
+
 libdetection (0.2.0-2) unstable; urgency=medium
 
   * Just rebuild.
