@@ -1,8 +1,8 @@
-libdetection (0.2.0-3) UNRELEASED; urgency=medium
+libdetection (0.2.0-3) unstable; urgency=medium
 
-  *
+  * Fix dev package dependencies.
 
- -- Alexander Golovko <ag@wallarm.com>  Wed, 12 Apr 2017 10:23:11 +0300
+ -- Alexander Golovko <ag@wallarm.com>  Wed, 12 Apr 2017 12:49:09 +0300
 
 libdetection (0.2.0-2) unstable; urgency=medium
 

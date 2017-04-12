@@ -27,6 +27,7 @@ require attacks samples to learn.
 Summary: Development files for library to detect attacks
 Group: Development/Libraries
 Requires: libdetection = %{version}-%{release}
+Requires: libavl2-devel
 
 %description devel
 Extendable library for detection syntaxes by formal notations. Can be used to
@@ -68,6 +69,6 @@ require attacks samples to learn.
 
 %changelog
 * Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-3
-- no changes yet.
+- Fix devel package dependencies.
 * Wed Apr 12 2017 Alexander Golovko <ag@wallarm.com> 0.2.0-2
 - Initial release.

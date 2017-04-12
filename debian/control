@@ -9,7 +9,7 @@ Standards-Version: 3.9.4
 Package: libdetection-dev
 Section: libdevel
 Architecture: all
-Depends: libdetection (= ${binary:Version})
+Depends: libavl2-dev, libdetection (= ${binary:Version})
 Description: Development files for library to detect attacks
  Extendable library for detection syntaxes by formal notations. Can be used to
  detect injections and commanding attacks such as SQLi and others. Does not
