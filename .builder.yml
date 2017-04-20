@@ -7,6 +7,7 @@ dists:
   - wheezy
   - jessie
   - trusty
+  - xenial
 repos:
   wallarm:
     dev: true
