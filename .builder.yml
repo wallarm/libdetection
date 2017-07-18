@@ -8,6 +8,7 @@ dists:
   - jessie
   - trusty
   - xenial
+  - stretch
 repos:
   wallarm:
     dev: true
