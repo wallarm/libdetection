@@ -13,11 +13,10 @@ RUN cd /opt/avl && \
     make install 
 
 RUN mkdir -p /opt/libdetection
+WORKDIR /opt/libdetection
 ADD ./ /opt/libdetection/
-RUN cd /opt/libdetection && \
-    ./configure && \
-    cd build && \
+RUN cmake . && \
     make && \
     export LD_LIBRARY_PATH=/usr/local/lib && \ 
-    echo '123e2union select-id FRoM users--a-' |./perf/perf -evvv && \ 
-    echo '123; DROP DATABASE users; ' |./perf/perf -evvv 
+    echo '123e2union select-id FRoM users--a-' |./perf/libdetection_perf -evvv && \ 
+    echo '123; DROP DATABASE users; ' |./perf/libdetection_perf -evvv 
