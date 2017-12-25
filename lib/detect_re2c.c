@@ -62,6 +62,14 @@ detect_re2c_prepare_input(
     detect_re2c_chk_switch_to_data(ctx, end);
 
   fill:
+    if (!ctx->yyfill_need && *end == ctx->pos && ctx->fin) {
+        /*
+         * A special case: we have to finalize the data
+         * but have no more characters in the buffer.
+         * Require at least one character.
+         */
+        ctx->yyfill_need = 1;
+    }
     if (ctx->yyfill_need && *end - ctx->pos < ctx->yyfill_need)
         return (detect_re2c_yyfill(ctx, end, ctx->yyfill_need, maxfill));
     return (0);
