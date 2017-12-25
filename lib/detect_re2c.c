@@ -78,8 +78,8 @@ detect_re2c_switch_to_tmp_data(
     unsigned siz = start_pos_offset + maxfill;
 
     if (ctx->tmp_data == NULL) {
-        ctx->tmp_data = malloc(siz);
-        /* TODO: check for memory allocation error */
+        if ((ctx->tmp_data = malloc(siz)) == NULL)
+            return (errno);
         ctx->tmp_data_alloc = siz;
     } else {
         if (siz > ctx->tmp_data_alloc) {
@@ -88,8 +88,8 @@ detect_re2c_switch_to_tmp_data(
 
             for (new_alloc = ctx->tmp_data_alloc * 2;
                  siz > new_alloc; new_alloc *= 2);
-            new_tmp_data = realloc(ctx->tmp_data, new_alloc);
-            /* TODO: check for memory allocation error */
+            if ((new_tmp_data = realloc(ctx->tmp_data, new_alloc)) == NULL)
+                return (errno);
             ctx->tmp_data = new_tmp_data;
             ctx->tmp_data_alloc = new_alloc;
         }
@@ -141,8 +141,8 @@ detect_re2c_update_tmp_data(
 
         for (new_alloc = ctx->tmp_data_alloc * 2;
              siz > new_alloc; new_alloc *= 2);
-        new_tmp_data = realloc(ctx->tmp_data, new_alloc);
-        /* TODO: check for memory allocation error */
+        if ((new_tmp_data = realloc(ctx->tmp_data, new_alloc)) == NULL)
+            return (errno);
         ctx->start = new_tmp_data;
         ctx->pos = new_tmp_data + (ctx->pos - ctx->tmp_data);
         ctx->marker = new_tmp_data + (ctx->marker - ctx->tmp_data);
