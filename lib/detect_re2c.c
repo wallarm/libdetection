@@ -167,11 +167,15 @@ detect_re2c_update_tmp_data(
     if (ctx->data != NULL) {
         unsigned avail = ctx->siz - ctx->data_copied;
 
+        /*
+         * It is possible to (avail == 0) here,
+         * when ctx->siz == 0 && ctx->data_copied == 0.
+         */
+
         need -= *end - ctx->pos;
 
         if (avail > need)
             avail = need;
-        assert (avail != 0);
         memcpy((void *)*end, ctx->data + ctx->data_copied, avail);
         (*end) += avail;
         ctx->data_copied += avail;
