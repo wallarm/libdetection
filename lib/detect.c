@@ -161,6 +161,8 @@ detect_add_data(struct detect *detect, const void *data, size_t siz, bool fin)
 {
     if (!detect->started)
         return (EINVAL);
+    if (!siz && !fin)
+        return (0);
     return (detect->parser->add_data(detect, data, siz, fin));
 }
 
