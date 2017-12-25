@@ -1,3 +1,9 @@
+libdetection (0.2.2-1) UNRELEASED; urgency=medium
+
+  *  no changes yet
+
+ -- Alexey Temnikov <atemnikov@wallarm.com>  Mon, 25 Dec 2017 19:01:14 +0300
+
 libdetection (0.2.1-1) stable; urgency=medium
 
   * Fixed crashes with incorrect data (Closes: NODE-1081)
