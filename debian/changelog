@@ -1,8 +1,8 @@
-libdetection (0.2.0-5) UNRELEASED; urgency=medium
+libdetection (0.2.1-1) stable; urgency=medium
 
-  *
+  * Fixed crashes with incorrect data (Closes: NODE-1081)
 
- -- Alexander Golovko <ag@wallarm.com>  Wed, 12 Apr 2017 14:23:37 +0300
+ -- Alexey Temnikov <atemnikov@wallarm.com>  Mon, 25 Dec 2017 18:27:37 +0300
 
 libdetection (0.2.0-4) unstable; urgency=medium
 
