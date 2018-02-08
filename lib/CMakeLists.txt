@@ -1,13 +1,21 @@
+find_package(LibWallarmMisc REQUIRED)
 
 set (TARGET "detection")
-set (TARGET_VERSION_MAJOR 0)
-set (TARGET_VERSION_MINOR 2)
+set (TARGET_VERSION_MAJOR 1)
+set (TARGET_VERSION_MINOR 0)
 set (TARGET_VERSION_PATCH 0)
 set (TARGET_VERSION_FULL
   ${TARGET_VERSION_MAJOR}.${TARGET_VERSION_MINOR}.${TARGET_VERSION_PATCH})
 set (TARGET_VERSION ${TARGET_VERSION_MAJOR})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  ${LIBWALLARMMISC_INCLUDE_DIRS}
+  )
+
+set (LIBDEPS
+  ${LIBWALLARMMISC_LIBRARIES}
+)
 
 set (SOURCES
   detect.c
@@ -45,7 +53,7 @@ set (LIB_TARGETS ${STATIC_TARGET} ${SHARED_TARGET})
 
 if (ENABLE_SHARED)
   add_library(${SHARED_TARGET} SHARED ${SOURCES})
-  target_link_libraries(${SHARED_TARGET} avl ${PARSERS_TARGETS})
+  target_link_libraries(${SHARED_TARGET} ${PARSERS_TARGETS} ${LIBDEPS})
   set_target_properties(${SHARED_TARGET} PROPERTIES
     VERSION ${TARGET_VERSION_FULL}
     SOVERSION ${TARGET_VERSION}
@@ -53,7 +61,7 @@ if (ENABLE_SHARED)
 endif()
 if (ENABLE_STATIC)
   add_library(${STATIC_TARGET} STATIC ${SOURCES})
-  target_link_libraries(${STATIC_TARGET} avl ${PARSERS_TARGETS})
+  target_link_libraries(${STATIC_TARGET} ${PARSERS_TARGETS} ${LIBDEPS})
   set_target_properties(${STATIC_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
 endif()
 install(TARGETS ${LIB_TARGETS}

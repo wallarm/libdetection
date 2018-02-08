@@ -3,6 +3,7 @@
 
 #include "detect.h"
 #include "detect_buf.h"
+#include <string.h>
 
 #define DETECT_HIDDEN __attribute__ ((visibility ("hidden")))
 
@@ -53,10 +54,29 @@ struct detect {
 };
 
 /* Alphanumeric comparison */
-int detect_str_cmp(const void *a, const void *b, void *user);
+static inline int
+detect_str_cmp(const struct detect_str *s1, const struct detect_str *s2)
+{
+    int rc;
+
+    if (s1->len < s2->len) {
+        if (!(rc = memcmp(s1->str, s2->str, s1->len)))
+            rc = -1;
+    } else if (!(rc = memcmp(s1->str, s2->str, s2->len)))
+        rc = (s1->len != s2->len);
+    return (rc);
+}
 
 /* Fast but non-alphanumeric comparison */
-int detect_str_cmp_fast(const void *a, const void *b, void *user);
+static inline int
+intdetect_str_cmp_fast(const struct detect_str *s1, const struct detect_str *s2)
+{
+    if (s1->len < s2->len)
+        return (-1);
+    if (s1->len > s2->len)
+        return (1);
+    return (memcmp(s1->str, s2->str, s1->len));
+}
 
 struct detect_parser *detect_parser_find(struct detect_str *name);
 

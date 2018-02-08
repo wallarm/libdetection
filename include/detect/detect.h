@@ -3,17 +3,10 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#include <avl.h>
+#include <wallarm/tree.h>
 #include <sys/queue.h>
-
-#ifndef container_of
-#define container_of(ptr, type, member)                         \
-    ({                                                          \
-        typeof(((type *)NULL)->member) *tmp__ = (void *)(ptr);  \
-        (type *)((void *)tmp__ - offsetof(type, member));       \
-    })
-#endif
 
 int detect_init(void);
 int detect_deinit(void);
@@ -30,15 +23,18 @@ struct detect_token_stat {
     struct detect_str token_name;
     size_t count;
 
-    avl_node_t link;
+    RB_ENTRY(detect_token_stat) link;
 };
+
+RB_HEAD(detect_token_stat_tree, detect_token_stat);
+WRB_PROTOTYPE(detect_token_stat_tree, detect_token_stat, struct detect_str *);
 
 struct detect_flag_stat {
     struct detect_str flag_name;
     size_t count;
-    avl_tree_t stat_by_tokens;
+    struct detect_token_stat_tree stat_by_tokens;
 
-    avl_node_t link;
+    RB_ENTRY(detect_flag_stat) link;
 };
 
 struct detect_data {
@@ -53,8 +49,11 @@ struct detect_ctx_desc {
     unsigned rce:1;
 };
 
+RB_HEAD(detect_flag_stat_tree, detect_flag_stat);
+WRB_PROTOTYPE(detect_flag_stat_tree, detect_flag_stat, struct detect_str *);
+
 struct detect_ctx_result {
-    avl_tree_t stat_by_flags; /* struct detect_flag_stat */
+    struct detect_flag_stat_tree stat_by_flags;
     STAILQ_HEAD(, detect_data) datas;
     unsigned finished:1;
     unsigned disabled:1;

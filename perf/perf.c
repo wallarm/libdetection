@@ -24,32 +24,26 @@ s_perf_dump_result(struct detect *detect)
     nctx = detect_get_nctx(detect);
     for (i = 0; i < nctx; i++) {
         const struct detect_ctx_desc *desc;
-        const struct detect_ctx_result *res;
+        struct detect_ctx_result *res;
 
         desc = detect_ctx_get_desc(detect, i);
-        res = detect_ctx_get_result(detect, i);
+        res = (typeof(res))detect_ctx_get_result(detect, i);
         printf("[%s]%.*s:%s\n",
                desc->rce ? "rce" : "inj",
                (int)desc->name.len, desc->name.str,
                res->parse_error ? "error:" : "");
-        if (res->stat_by_flags.head != NULL) {
-            avl_node_t *flag_link;
+        if (!RB_EMPTY(&res->stat_by_flags)) {
+            struct detect_flag_stat *fs;
 
             printf(" flags:\n");
-            for (flag_link = res->stat_by_flags.head;
-                 flag_link != NULL; flag_link = flag_link->next) {
-                avl_node_t *token_link;
-                struct detect_flag_stat *fs =
-                    container_of(flag_link, typeof(*fs), link);
+            RB_FOREACH(fs, detect_flag_stat_tree, &res->stat_by_flags) {
+                struct detect_token_stat *ts;
 
                 printf("  %.*s:%zu:\n  ",
                        (int)fs->flag_name.len, fs->flag_name.str,
                        fs->count);
 
-                for (token_link = fs->stat_by_tokens.head;
-                     token_link != NULL; token_link = token_link->next) {
-                    struct detect_token_stat *ts =
-                        container_of(token_link, typeof(*ts), link);
+                RB_FOREACH(ts, detect_token_stat_tree, &fs->stat_by_tokens) {
                     printf(" %.*s:%zu",
                            (int)ts->token_name.len, ts->token_name.str,
                            ts->count);
