@@ -232,7 +232,7 @@ detect_sqli_add_data(
                      */
                     ctx->res.parse_error =
                         (token == TOK_ERROR ||
-                         ctx->res.stat_by_flags.head == NULL
+                         RB_EMPTY(&ctx->res.stat_by_flags)
                          /* || !ctx->has_any_tokens */);
                 }
             }

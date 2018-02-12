@@ -1,16 +1,15 @@
 FROM debian:jessie
 
 RUN apt-get update && \
-    apt-get -y install autotools-dev automake libtool autoconf git cmake libcunit1-dev bison re2c && \
-    mkdir -p /opt/avl
+    apt-get -y install git cmake libcunit1-dev bison re2c && \
+    mkdir -p /opt/libwallarmmisc
 
-RUN git clone git://git.fruit.je/avl /opt/avl
+RUN git clone https://github.com/wallarm/libwallarmmisc.git /opt/libwallarmmisc
 
-RUN cd /opt/avl && \
-    autoreconf -i && \
-    ./configure --prefix=/usr/local && \
-    make && \
-    make install 
+RUN cd /opt/libwallarmmisc && \
+    ./config -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -C build && \
+    make -C build install
 
 RUN mkdir -p /opt/libdetection
 WORKDIR /opt/libdetection

@@ -2,13 +2,19 @@
 #include <errno.h>
 #include <stdlib.h>
 
-static avl_tree_t detect_parsers;
-
 struct detect_parser_info {
     struct detect_parser *parser;
     struct detect_str name;
-    avl_node_t link;
+    RB_ENTRY(detect_parser_info) link;
 };
+
+RB_HEAD(detect_parser_tree, detect_parser_info);
+#define DETECT_PARSER_INFO2KEY(info) (&(info)->name)
+WRB_GENERATE_STATIC(
+    detect_parser_tree, detect_parser_info, struct detect_str *,
+    link, detect_str_cmp, DETECT_PARSER_INFO2KEY);
+
+static struct detect_parser_tree detect_parsers;
 
 #define TRYLOAD(rc, parser)                             \
     do {                                                \
@@ -25,7 +31,7 @@ s_detect_parser_load(struct detect_parser *parser)
 
     if (parser->name.str == NULL)
         return (EINVAL);
-    if (avl_search(&detect_parsers, &parser->name) != NULL)
+    if (WRB_FIND(detect_parser_tree, &detect_parsers, &parser->name) != NULL)
         return (EINVAL);
     if (parser->init != NULL) {
         int rc;
@@ -36,19 +42,8 @@ s_detect_parser_load(struct detect_parser *parser)
     pi = calloc(1, sizeof(*pi));
     pi->parser = parser;
     pi->name = parser->name;
-    avl_node_init(&pi->link, &pi->name);
-    avl_insert(&detect_parsers, &pi->link);
+    RB_INSERT(detect_parser_tree, &detect_parsers, pi);
     return (0);
-}
-
-static void
-s_detect_parser_free(void *p, void *user)
-{
-    struct detect_parser_info *pi = container_of(p, typeof(*pi), name);
-
-    if (pi->parser->deinit != NULL)
-        pi->parser->deinit();
-    free(pi);
 }
 
 int
@@ -56,9 +51,7 @@ detect_parser_init(void)
 {
     int rc = 0;
 
-    avl_tree_init(&detect_parsers, detect_str_cmp_fast,
-                  s_detect_parser_free);
-    detect_parsers.allocator = (avl_allocator_t *)&avl_allocator_0;
+    RB_INIT(&detect_parsers);
 
     TRYLOAD(rc, detect_parser_sqli);
     TRYLOAD(rc, detect_parser_pt);
@@ -72,18 +65,24 @@ detect_parser_init(void)
 int
 detect_parser_deinit(void)
 {
-    avl_tree_purge(&detect_parsers);
+    struct detect_parser_info *pi, *pi_tmp;
+
+    WRB_FOREACH_PDFS(pi, detect_parser_tree, &detect_parsers, pi_tmp) {
+        if (pi->parser->deinit != NULL)
+            pi->parser->deinit();
+        free(pi);
+    }
     return (0);
 }
 
 struct detect_parser *
 detect_parser_find(struct detect_str *name)
 {
-    avl_node_t *link;
+    struct detect_parser_info *pi;
 
-    if ((link = avl_search(&detect_parsers, name)) == NULL)
+    if ((pi = WRB_FIND(detect_parser_tree, &detect_parsers, name)) == NULL)
         return (NULL);
-    return (container_of(link, struct detect_parser_info, link)->parser);
+    return (pi->parser);
 }
 
 void *
@@ -91,9 +90,9 @@ detect_parser_list(const struct detect_str **name)
 {
     struct detect_parser_info *pi;
 
-    if (detect_parsers.head == NULL)
+    pi = RB_MIN(detect_parser_tree, &detect_parsers);
+    if (pi == NULL)
         return (NULL);
-    pi = container_of(detect_parsers.head->item, typeof(*pi), name);
     *name = &pi->name;
     return (pi);
 }
@@ -103,9 +102,9 @@ detect_parser_list_next(void *ctx, const struct detect_str **name)
 {
     struct detect_parser_info *pi = ctx;
 
-    if (pi->link.next == NULL)
+    pi = RB_NEXT(detect_parser_tree, &detect_parsers, pi);
+    if (pi == NULL)
         return (NULL);
-    pi = container_of(pi->link.next->item, typeof(*pi), name);
     *name = &pi->name;
     return (pi);
 }

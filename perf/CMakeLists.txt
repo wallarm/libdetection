@@ -1,7 +1,11 @@
+find_package(LibWallarmMisc REQUIRED)
 
 set (TARGET "libdetection_perf")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  ${LIBWALLARMMISC_INCLUDE_DIRS}
+)
 
 set (SOURCES
   perf.c

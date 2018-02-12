@@ -5,6 +5,16 @@
 
 static bool detect_initialized = false;
 
+#define DETECT_TOKEN_STAT2KEY(stat) (&(stat)->token_name)
+WRB_GENERATE(
+    detect_token_stat_tree, detect_token_stat, struct detect_str *,
+    link, detect_str_cmp, DETECT_TOKEN_STAT2KEY);
+
+#define DETECT_FLAG_STAT2KEY(stat) (&(stat)->flag_name)
+WRB_GENERATE(
+    detect_flag_stat_tree, detect_flag_stat, struct detect_str *,
+    link, detect_str_cmp, DETECT_FLAG_STAT2KEY);
+
 static int
 s_detect_deinit(void)
 {
@@ -175,30 +185,11 @@ detect_instance_init(struct detect *detect, struct detect_parser *parser)
     return (0);
 }
 
-static void
-s_detect_flag_stat_free(void *p, void *user)
-{
-    struct detect_flag_stat *fs = container_of(p, typeof(*fs), flag_name);
-
-    avl_tree_purge(&fs->stat_by_tokens);
-    free(fs);
-}
-
-static void
-s_detect_flag_token_free(void *p, void *user)
-{
-    struct detect_token_stat *ts = container_of(p, typeof(*ts), token_name);
-
-    free(ts);
-}
-
 int
 detect_ctx_result_init(struct detect_ctx_result *res)
 {
     memset(res, 0, sizeof(*res));
-    avl_tree_init(&res->stat_by_flags, detect_str_cmp, s_detect_flag_stat_free);
-    res->stat_by_flags.allocator =
-        (typeof(res->stat_by_flags.allocator))&avl_allocator_0;
+    RB_INIT(&res->stat_by_flags);
     STAILQ_INIT(&res->datas);
     return (0);
 }
@@ -207,8 +198,16 @@ int
 detect_ctx_result_deinit(struct detect_ctx_result *res)
 {
     struct detect_data *data;
+    struct detect_flag_stat *fs, *fs_tmp;
 
-    avl_tree_purge(&res->stat_by_flags);
+    WRB_FOREACH_PDFS(fs, detect_flag_stat_tree, &res->stat_by_flags, fs_tmp) {
+        struct detect_token_stat *ts, *ts_tmp;
+
+        WRB_FOREACH_PDFS(ts, detect_token_stat_tree, &fs->stat_by_tokens, ts_tmp)
+            free(ts);
+        free(fs);
+    }
+    RB_INIT(&res->stat_by_flags);
     while ((data = STAILQ_FIRST(&res->datas)) != NULL) {
         STAILQ_REMOVE_HEAD(&res->datas, link);
         free(data->value.str);
@@ -224,12 +223,11 @@ detect_ctx_result_store_token(
     struct detect_ctx_result *res, const struct detect_str *flag,
     const struct detect_str *name)
 {
-    avl_node_t *link;
     struct detect_flag_stat *fs;
     struct detect_token_stat *ts;
 
-    if ((link = avl_search(&res->stat_by_flags, flag)) != NULL) {
-        fs = container_of(link, typeof(*fs), link);
+    if ((fs = WRB_FIND(
+             detect_flag_stat_tree, &res->stat_by_flags, flag)) != NULL) {
         fs->count++;
     } else {
         fs = calloc(1, sizeof(*fs) + flag->len + 1);
@@ -239,15 +237,11 @@ detect_ctx_result_store_token(
         fs->flag_name.len = flag->len;
         fs->flag_name.str[fs->flag_name.len] = 0;
         fs->count = 1;
-        avl_tree_init(&fs->stat_by_tokens, detect_str_cmp,
-                      s_detect_flag_token_free);
-        fs->stat_by_tokens.allocator =
-            (typeof(fs->stat_by_tokens.allocator))&avl_allocator_0;
-        avl_node_init(&fs->link, &fs->flag_name);
-        avl_insert(&res->stat_by_flags, &fs->link);
+        RB_INIT(&fs->stat_by_tokens);
+        RB_INSERT(detect_flag_stat_tree, &res->stat_by_flags, fs);
     }
-    if ((link = avl_search(&fs->stat_by_tokens, name)) != NULL) {
-        ts = container_of(link, typeof(*ts), link);
+    if ((ts = WRB_FIND(
+             detect_token_stat_tree, &fs->stat_by_tokens, name)) != NULL) {
         ts->count++;
     } else {
         ts = calloc(1, sizeof(*ts) + name->len + 1);
@@ -257,8 +251,7 @@ detect_ctx_result_store_token(
         ts->token_name.len = name->len;
         ts->token_name.str[ts->token_name.len] = 0;
         ts->count++;
-        avl_node_init(&ts->link, &ts->token_name);
-        avl_insert(&fs->stat_by_tokens, &ts->link);
+        RB_INSERT(detect_token_stat_tree, &fs->stat_by_tokens, ts);
     }
     return (0);
 }
@@ -300,7 +293,7 @@ detect_ctx_has_attack(struct detect *detect, unsigned ctxnum)
      * Injection. At least one instruction should present.
      * Just test if instruction tree is not empty.
      */
-    if (ctx->res->stat_by_flags.head != NULL)
+    if (!RB_EMPTY(&ctx->res->stat_by_flags))
         return (true);
     return (false);
 }
