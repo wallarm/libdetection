@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 8), cmake, bison (>= 3.0), re2c, libcunit1-dev,
                libwallarmmisc-dev
 Standards-Version: 3.9.4
 
-Package: libdetection-dev
+Package: libdetection1-dev
 Section: libdevel
 Architecture: all
 Depends: libwallarmmisc-dev, libdetection (= ${binary:Version})
@@ -15,7 +15,7 @@ Description: Development files for library to detect attacks
  detect injections and commanding attacks such as SQLi and others. Does not
  require attacks samples to learn.
 
-Package: libdetection-utils
+Package: libdetection1-utils
 Section: utils
 Architecture: all
 Depends: libdetection (= ${binary:Version})
@@ -24,7 +24,7 @@ Description: Utilities for signature-free approach library to detect attacks
  detect injections and commanding attacks such as SQLi and others. Does not
  require attacks samples to learn.
 
-Package: libdetection
+Package: libdetection1
 Architecture: amd64
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Signature-free approach library to detect attacks
