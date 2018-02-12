@@ -3,13 +3,13 @@ Maintainer: Wallarm Package Team <support@wallarm.com>
 Section: libs
 Priority: optional
 Build-Depends: debhelper (>= 8), cmake, bison (>= 3.0), re2c, libcunit1-dev,
-               libavl-dev (>= 2.0)
+               libwallarmmisc-dev
 Standards-Version: 3.9.4
 
 Package: libdetection-dev
 Section: libdevel
 Architecture: all
-Depends: libavl-dev (>= 2.0), libdetection (= ${binary:Version})
+Depends: libwallarmmisc-dev, libdetection (= ${binary:Version})
 Description: Development files for library to detect attacks
  Extendable library for detection syntaxes by formal notations. Can be used to
  detect injections and commanding attacks such as SQLi and others. Does not

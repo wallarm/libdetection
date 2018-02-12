@@ -13,7 +13,7 @@ BuildRequires: cmake
 BuildRequires: CUnit-devel
 BuildRequires: bison >= 3.0
 BuildRequires: re2c
-BuildRequires: libavl2-devel
+BuildRequires: libwallarmmisc-devel
 
 Group: System Environment/Libraries
 
@@ -27,7 +27,7 @@ require attacks samples to learn.
 Summary: Development files for library to detect attacks
 Group: Development/Libraries
 Requires: libdetection = %{version}-%{release}
-Requires: libavl2-devel
+Requires: libwallarmmisc-devel
 
 %description devel
 Extendable library for detection syntaxes by formal notations. Can be used to
