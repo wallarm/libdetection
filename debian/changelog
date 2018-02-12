@@ -1,8 +1,8 @@
-libdetection (0.2.2-1) UNRELEASED; urgency=medium
+libdetection (1.0.0-1) stable; urgency=medium
 
-  *  no changes yet
+  * removed libavl2 dependency (Closes: NODE-1131)
 
- -- Alexey Temnikov <atemnikov@wallarm.com>  Mon, 25 Dec 2017 19:01:14 +0300
+ -- Alexey Temnikov <atemnikov@wallarm.com>  Mon, 12 Feb 2018 15:15:14 +0300
 
 libdetection (0.2.1-1) stable; urgency=medium
 
