@@ -26,8 +26,9 @@ require attacks samples to learn.
 %package devel
 Summary: Development files for library to detect attacks
 Group: Development/Libraries
-Requires: libdetection = %{version}-%{release}
+Requires: libdetection1 = %{version}-%{release}
 Requires: libwallarmmisc-devel
+Conflicts: libdetection-devel
 
 %description devel
 Extendable library for detection syntaxes by formal notations. Can be used to
@@ -37,7 +38,8 @@ require attacks samples to learn.
 %package utils
 Summary: Utilities for signature-free approach library to detect attacks
 Group: Development/Tools
-Requires: libdetection = %{version}-%{release}
+Requires: libdetection1 = %{version}-%{release}
+Conflicts: libdetection-utils
 
 %description utils
 Extendable library for detection syntaxes by formal notations. Can be used to
