@@ -1,6 +1,6 @@
 Name: libdetection1
 Version: 1.0.0
-Release: 1
+Release: 2
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
@@ -70,7 +70,9 @@ require attacks samples to learn.
 %postun -p /sbin/ldconfig
 
 %changelog
-* Mon Feb 15 2018 Alexey Temnikov <atemnikov@wallarm.com> 1.0.0-1
+* Tue Feb 13 2018 Alexey Temnikov <atemnikov@wallarm.com> 1.0.0-2
+- fixed packages
+* Mon Feb 12 2018 Alexey Temnikov <atemnikov@wallarm.com> 1.0.0-1
 - removed libavl2 dependency (Closes: NODE-1131)
 * Mon Dec 25 2017 Alexey Temnikov <atemnikov@wallarm.com> 0.2.1-1
 - Fixed crashes with incorrect data (Closes: NODE-1081)
