@@ -9,7 +9,8 @@ Standards-Version: 3.9.4
 Package: libdetection1-dev
 Section: libdevel
 Architecture: all
-Depends: libwallarmmisc-dev, libdetection (= ${binary:Version})
+Depends: libwallarmmisc-dev, libdetection1 (= ${binary:Version})
+Breaks: libdetection-dev
 Description: Development files for library to detect attacks
  Extendable library for detection syntaxes by formal notations. Can be used to
  detect injections and commanding attacks such as SQLi and others. Does not
@@ -18,7 +19,8 @@ Description: Development files for library to detect attacks
 Package: libdetection1-utils
 Section: utils
 Architecture: all
-Depends: libdetection (= ${binary:Version})
+Depends: libdetection1 (= ${binary:Version})
+Breaks: libdetection-utils
 Description: Utilities for signature-free approach library to detect attacks
  Extendable library for detection syntaxes by formal notations. Can be used to
  detect injections and commanding attacks such as SQLi and others. Does not
