@@ -56,6 +56,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token <data> TOK_SHUTDOWN
 %token <data> TOK_DECLARE
+%token <data> TOK_TABLE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -122,6 +123,7 @@ sql_no_parens:
         | shutdown
         | declare
         | execute
+        | drop
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -663,10 +665,19 @@ execute:
         }
         ;
 
+drop:     TOK_DROP[tk1] TOK_FUNCTION[tk2] func_name {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_DROP[tk1] TOK_TABLE[tk2] func_name {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
 command:  TOK_INSERT
         | TOK_DELETE
         | TOK_ATTACH
-        | TOK_DROP
         ;
 
 close_multiple_parens: ')'[u1] {YYUSE($u1);}
