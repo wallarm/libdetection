@@ -528,7 +528,7 @@ after_exp_cont_op_noexpr:
 
 after_exp_cont_op:
         expr after_exp_cont_op_noexpr
-        | after_exp_cont_op_noexpr
+        | where_opt after_exp_cont_op_noexpr
         ;
 
 after_exp_cont:
