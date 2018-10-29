@@ -49,7 +49,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_COMMA
 %token <data> TOK_SET
 %token <data> TOK_BETWEEN TOK_LIKE TOK_RLIKE TOK_IN TOK_BOOLEAN TOK_MODE
-%token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_END
+%token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_BEGIN TOK_END
 %token <data> TOK_WAITFOR TOK_DELAY
 %token TOK_FUNC
 %token TOK_ERROR
@@ -110,6 +110,7 @@ update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
 sql_no_parens:
         select
         | update
+        | begin_end
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -498,6 +499,12 @@ select:   TOK_SELECT[tk] select_args into_opt from_opt
             sqli_store_data(ctx, &$tk);
         }
         | select union_c all_distinct_opt select_parens
+        ;
+
+begin_end: TOK_BEGIN[tk1] multiple_sqls TOK_END[tk2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
         ;
 
 command:  TOK_INSERT
