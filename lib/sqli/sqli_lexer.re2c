@@ -348,6 +348,9 @@ sqli_get_token(
       <INITIAL> 'LIKE'/key_end {
           KEYNAME_SET_RET(ctx, arg, LIKE, SQLI_KEY_INSTR);
       }
+      <INITIAL> 'RLIKE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, RLIKE, SQLI_KEY_INSTR);
+      }
       <INITIAL> 'FROM'/key_end {
           KEYNAME_SET_RET(ctx, arg, FROM, SQLI_KEY_INSTR);
       }
@@ -473,6 +476,24 @@ sqli_get_token(
       }
       <INITIAL> '&&' {
           KEYNAME_SET_RET(ctx, arg, AND, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'MOD'/key_end {
+          KEYNAME_SET_RET(ctx, arg, MOD, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'XOR'/key_end {
+          KEYNAME_SET_RET(ctx, arg, XOR, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'REGEXP'/key_end {
+          KEYNAME_SET_RET(ctx, arg, REGEXP, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'BINARY'/key_end {
+          KEYNAME_SET_RET(ctx, arg, BINARY, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'SOUNDS'/key_end {
+          KEYNAME_SET_RET(ctx, arg, SOUNDS, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'OUTFILE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, OUTFILE, SQLI_KEY_INSTR);
       }
       <INITIAL> opchar => OPERATOR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
