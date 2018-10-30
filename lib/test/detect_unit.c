@@ -73,6 +73,21 @@ Tsqli_inj_in_table_name(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_union_distinct(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1' union distinct select 1"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -84,6 +99,7 @@ main(void)
         {"simplest", Tsqli_simplest},
         {"rce", Tsqli_rce},
         {"inj_in_table_name", Tsqli_inj_in_table_name},
+        {"union_distinct", Tsqli_union_distinct},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
