@@ -33,6 +33,8 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR
 %token <data> '.' ',' '(' ')' '*' '[' ']' ';'
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
+              TOK_MOD TOK_XOR TOK_REGEXP
+              TOK_BINARY TOK_SOUNDS TOK_OUTFILE
 %token <data> TOK_FOR
 %token <data> TOK_FROM TOK_INTO TOK_WHERE
 %token <data> TOK_AS TOK_ON TOK_USING
@@ -46,7 +48,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DROP
 %token <data> TOK_COMMA
 %token <data> TOK_SET
-%token <data> TOK_BETWEEN TOK_LIKE TOK_IN TOK_BOOLEAN TOK_MODE
+%token <data> TOK_BETWEEN TOK_LIKE TOK_RLIKE TOK_IN TOK_BOOLEAN TOK_MODE
 %token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_END
 %token <data> TOK_WAITFOR TOK_DELAY
 %token TOK_FUNC
@@ -293,8 +295,12 @@ operator: TOK_OR
         | TOK_IS
         | TOK_NOT
         | TOK_DIV
+        | TOK_MOD
+        | TOK_XOR
+        | TOK_REGEXP
         | TOK_BETWEEN
         | TOK_LIKE
+        | TOK_RLIKE
         | TOK_OPERATOR
         | TOK_CASE
         | TOK_WHEN
@@ -303,6 +309,10 @@ operator: TOK_OR
         | TOK_WAITFOR
         | TOK_DELAY
         | TOK_IN
+        | TOK_BINARY
+        | TOK_SOUNDS
+        | TOK_INTO
+        | TOK_OUTFILE
         | '*'
         ;
 
