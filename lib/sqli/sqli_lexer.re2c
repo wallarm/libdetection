@@ -465,6 +465,9 @@ sqli_get_token(
       <INITIAL> 'DELAY'/key_end {
           KEYNAME_SET_RET(ctx, arg, DELAY, SQLI_KEY_INSTR);
       }
+      <INITIAL> 'TIME'/key_end {
+          KEYNAME_SET_RET(ctx, arg, TIME, SQLI_KEY_INSTR);
+      }
       <INITIAL> '||' {
           KEYNAME_SET_RET(ctx, arg, OR, SQLI_KEY_INSTR);
       }

@@ -48,7 +48,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_SET
 %token <data> TOK_BETWEEN TOK_LIKE TOK_IN TOK_BOOLEAN TOK_MODE
 %token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_END
-%token <data> TOK_WAITFOR TOK_DELAY
+%token <data> TOK_WAITFOR TOK_DELAY TOK_TIME
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -108,6 +108,7 @@ update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
 sql_no_parens:
         select
         | update
+        | waitfor_delay
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -500,6 +501,18 @@ select:   TOK_SELECT[tk] select_args into_opt from_opt
             sqli_store_data(ctx, &$tk);
         }
         | select union_c all_opt select_parens
+        ;
+
+waitfor_delay: TOK_WAITFOR[tk1] TOK_DELAY[tk2] data_name[data] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_WAITFOR[tk1] TOK_TIME[tk2] data_name[data] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$data);
+        }
         ;
 
 command:  TOK_INSERT
