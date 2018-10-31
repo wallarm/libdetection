@@ -343,6 +343,21 @@ Tsqli_join_wo_join_qual(void)
   CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_empty_schema(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("SELECT 1 FROM master..sysdatabases"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -368,6 +383,7 @@ main(void)
         {"create_func", Tsqli_create_func},
         {"bit_num", Tsqli_bit_num},
         {"join_wo_join_qual", Tsqli_join_wo_join_qual},
+        {"empty_schema", Tsqli_empty_schema},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
