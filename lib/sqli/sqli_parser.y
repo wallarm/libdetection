@@ -40,6 +40,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_AS TOK_ON TOK_USING
 %token <data> TOK_UNION TOK_INTERSECT TOK_EXCEPT TOK_ALL
 %token <data> TOK_ORDER TOK_GROUP TOK_BY TOK_HAVING
+%token <data> TOK_TOP TOK_PERCENT
 %token <data> TOK_CROSS TOK_FULL TOK_INNER TOK_LEFT TOK_RIGHT
 %token <data> TOK_LIMIT TOK_OFFSET
 %token <data> TOK_NATURAL TOK_JOIN
@@ -495,7 +496,24 @@ select_parens:
         | '('[u1] select_parens ')'[u2] {YYUSE($u1); YYUSE($u2);}
         ;
 
-select:   TOK_SELECT[tk] select_args into_opt from_opt
+percent_opt:
+        | TOK_PERCENT[tk] {
+                sqli_store_data(ctx, &$tk);
+        }
+
+top_opt:
+        | TOK_TOP[tk] data_name[data] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
+select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
