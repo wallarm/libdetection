@@ -168,6 +168,21 @@ Tsqli_waitfor(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_top(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("SELECT TOP 5 * FROM table_name"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -183,6 +198,7 @@ main(void)
         {"rlike_mod_xor_regexp_binary", Tsqli_rlike_mod_xor_regexp_binary},
         {"begin_end", Tsqli_begin_end},
         {"waitfor", Tsqli_waitfor},
+        {"top", Tsqli_top},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
