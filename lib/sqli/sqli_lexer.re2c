@@ -111,11 +111,11 @@ sqli_get_token(
           YYSETCONDITION(sqli_INITIAL);
           goto sqli_INITIAL;
       }
-      <INSTRING> "''"|'""' {
+      <INSTRING> "''"|'""'|'``' {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_INSTRING;
       }
-      <INSTRING> ['"] => INITIAL {
+      <INSTRING> ['"`] => INITIAL {
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
@@ -129,6 +129,11 @@ sqli_get_token(
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto sqli_DQUOTE;
       }
+      <BQUOTE> '``' {
+          detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto sqli_DQUOTE;
+      }
       <SQUOTE> ['] => INITIAL {
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
@@ -137,18 +142,22 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
-      <INSTRING,SQUOTE,DQUOTE> [\x00] => INITIAL {
+      <BQUOTE> [`] => INITIAL {
+          YYSETSTATE(-1);
+          RET_DATA(DATA, ctx, arg);
+      }
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE> [\x00] => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           arg->data.flags |= SQLI_DATA_NOEND;
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
-      <INSTRING,SQUOTE,DQUOTE> . {
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE> . {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
       }
-      <INSTRING,SQUOTE,DQUOTE> [^] {
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE> [^] {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
           RET_DATA_ERROR(ctx);
@@ -486,6 +495,10 @@ sqli_get_token(
       <INITIAL> ["] => DQUOTE {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           goto sqli_DQUOTE;
+      }
+      <INITIAL> [`] => BQUOTE {
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
+          goto sqli_BQUOTE;
       }
       <INITIAL> [\.][0-9] => NUMBER {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
