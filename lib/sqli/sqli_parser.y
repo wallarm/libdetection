@@ -142,6 +142,12 @@ colref_exact:
             YYUSE($u1);
             YYUSE($u2);
         }
+        | data_name[dname] '.'[u1] '.'[u2] data_name[colname] {
+            sqli_store_data(ctx, &$dname);
+            sqli_store_data(ctx, &$colname);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
         ;
 
 colref_asterisk:
