@@ -52,6 +52,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_BETWEEN TOK_LIKE TOK_RLIKE TOK_IN TOK_BOOLEAN TOK_MODE
 %token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_BEGIN TOK_END
 %token <data> TOK_WAITFOR TOK_DELAY TOK_TIME
+%token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -114,6 +115,7 @@ sql_no_parens:
         | begin_end
         | waitfor_delay
         | func
+        | create_function
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -537,6 +539,41 @@ waitfor_delay: TOK_WAITFOR[tk1] TOK_DELAY[tk2] data_name[data] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$data);
+        }
+        ;
+
+or_replace_opt:
+        | TOK_OR[tk1] TOK_REPLACE[tk2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+create_function_body: TOK_AS[tk] data_name[obj_file] ','[u1] data_name[link_symbol] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$obj_file);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$link_symbol);
+        }
+        | TOK_LANGUAGE[tk] data_name[lang_name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$lang_name);
+        }
+        | TOK_STRICT[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+create_function_bodies: create_function_body
+        | create_function_bodies create_function_body
+        ;
+
+create_function: TOK_CREATE[tk1] or_replace_opt TOK_FUNCTION[tk2] func
+                 TOK_RETURNS[tk3] data_name[rettype] create_function_bodies {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$rettype);
         }
         ;
 
