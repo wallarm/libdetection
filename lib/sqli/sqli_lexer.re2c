@@ -95,7 +95,7 @@ sqli_get_token(
       re2c:condprefix      = sqli_;
       re2c:condenumprefix  = sqli_;
 
-      whitespace = [ \t\b\r\n\f];
+      whitespace = [ \t\v\b\r\n\f\xA0]|[\xC2][\xA0];
       self = [,\.()\[\];];
       opchar = [~!^&|?%:+\-*/<>=];
       opchar_nocomment = [~!^&|?%+<>=];
