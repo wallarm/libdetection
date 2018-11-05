@@ -49,6 +49,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_BETWEEN TOK_LIKE TOK_IN TOK_BOOLEAN TOK_MODE
 %token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_END
 %token <data> TOK_WAITFOR TOK_DELAY
+%token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -108,6 +109,7 @@ update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
 sql_no_parens:
         select
         | update
+        | create_function
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -500,6 +502,41 @@ select:   TOK_SELECT[tk] select_args into_opt from_opt
             sqli_store_data(ctx, &$tk);
         }
         | select union_c all_opt select_parens
+        ;
+
+or_replace_opt:
+        | TOK_OR[tk1] TOK_REPLACE[tk2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+create_function_body: TOK_AS[tk] data_name[obj_file] ','[u1] data_name[link_symbol] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$obj_file);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$link_symbol);
+        }
+        | TOK_LANGUAGE[tk] data_name[lang_name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$lang_name);
+        }
+        | TOK_STRICT[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+create_function_bodies: create_function_body
+        | create_function_bodies create_function_body
+        ;
+
+create_function: TOK_CREATE[tk1] or_replace_opt TOK_FUNCTION[tk2] func
+                 TOK_RETURNS[tk3] data_name[rettype] create_function_bodies {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$rettype);
+        }
         ;
 
 command:  TOK_INSERT
