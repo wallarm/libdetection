@@ -113,6 +113,7 @@ sql_no_parens:
         | update
         | begin_end
         | waitfor_delay
+        | func
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
