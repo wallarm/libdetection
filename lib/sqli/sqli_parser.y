@@ -76,6 +76,9 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
+        | TOK_START_DATA expr post_exprs_opt ','[u1] data_cont {
+            YYUSE($u1);
+        }
         ;
 
 start_string: TOK_START_STRING {
