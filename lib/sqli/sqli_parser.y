@@ -108,6 +108,7 @@ update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
 sql_no_parens:
         select
         | update
+        | func
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
