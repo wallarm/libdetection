@@ -388,7 +388,7 @@ natural_opt:
         ;
 
 join_qual:
-        TOK_USING[tk] '('[u1] name_list ')'[u2] {
+        | TOK_USING[tk] '('[u1] name_list ')'[u2] {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
             YYUSE($u2);
