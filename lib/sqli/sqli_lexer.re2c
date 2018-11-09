@@ -474,6 +474,9 @@ sqli_get_token(
       <INITIAL> '&&' {
           KEYNAME_SET_RET(ctx, arg, AND, SQLI_KEY_INSTR);
       }
+      <INITIAL> "\\N"/key_end {
+          RET_DATA(NAME, ctx, arg);
+      }
       <INITIAL> opchar => OPERATOR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
