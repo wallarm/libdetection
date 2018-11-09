@@ -58,6 +58,21 @@ Tsqli_rce(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_null(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1-\\N union select 1"), true),0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -68,6 +83,7 @@ main(void)
     CU_TestInfo sqli_tests[] = {
         {"simplest", Tsqli_simplest},
         {"rce", Tsqli_rce},
+        {"null", Tsqli_null},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
