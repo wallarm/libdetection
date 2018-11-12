@@ -239,6 +239,7 @@ expr:   func
         ;
 
 func_name:  colref_exact
+        | TOK_LEFT
         ;
 
 expr_list:
