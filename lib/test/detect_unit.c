@@ -234,6 +234,22 @@ Tsqli_null(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_left_func(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1 AND left(a, 2) = 'ab'"), true),
+        0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -253,6 +269,7 @@ main(void)
         {"identifier_quote", Tsqli_identifier_quote},
         {"whitespace", Tsqli_whitespace},
         {"null", Tsqli_null},
+        {"left_func", Tsqli_left_func},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
