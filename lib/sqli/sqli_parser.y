@@ -121,6 +121,7 @@ sql_no_parens:
         | create_function
         | shutdown
         | declare
+        | execute
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -641,8 +642,28 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
         }
         ;
 
+param: data_name[value] {
+            sqli_store_data(ctx, &$value);
+        }
+        | data_name[name] '='[u1] data_name[value] {
+            sqli_store_data(ctx, &$name);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$value);
+        }
+        ;
+
+param_list: param
+        | param ','[u1] param_list {
+            YYUSE($u1);
+        }
+        ;
+execute:
+        TOK_EXECUTE[tk] func_name param_list {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
 command:  TOK_INSERT
-        | TOK_EXECUTE
         | TOK_DELETE
         | TOK_ATTACH
         | TOK_DROP
