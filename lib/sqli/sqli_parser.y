@@ -155,18 +155,10 @@ name_list: colref_exact
         | name_list ','[u1] colref_exact {YYUSE($u1);}
         ;
 
-op_expr:  func
-        | func expr
+expr_common:
+          func
         | operator expr {
             sqli_store_data(ctx, &$operator);
-        }
-        | '('[tk] select ')'[u1] expr {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
-        }
-        | '('[tk] expr ')'[u1] expr {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
         }
         | '('[tk] select ')'[u1] {
             sqli_store_data(ctx, &$tk);
@@ -176,12 +168,23 @@ op_expr:  func
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
+        | '('[tk] error {
+            sqli_store_data(ctx, &$tk);
+        }
         | '('[tk] error ')'[u1] {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
-        | '('[tk] error {
+        ;
+
+op_expr:  expr_common
+        | '('[tk] select ')'[u1] expr {
             sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+        }
+        | '('[tk] expr ')'[u1] expr {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
         }
         | op_expr post_exprs
         ;
@@ -211,25 +214,7 @@ post_exprs_opt:
         | post_exprs
         ;
 
-expr:   func
-        | operator expr {
-            sqli_store_data(ctx, &$operator);
-        }
-        | '('[tk] select ')'[u1] {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
-        }
-        | '('[tk] expr_list ')'[u1] {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
-        }
-        | '('[tk] error {
-            sqli_store_data(ctx, &$tk);
-        }
-        | '('[tk] error ')'[u1] {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
-        }
+expr:   expr_common
         | colref_exact
         | colref_asterisk
         | expr operator expr {
