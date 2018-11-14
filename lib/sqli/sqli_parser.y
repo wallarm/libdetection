@@ -31,7 +31,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';'
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '='
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE
@@ -332,6 +332,7 @@ operator: TOK_OR
         | TOK_INTO
         | TOK_OUTFILE
         | '*'
+        | '='
         ;
 
 select_distinct_opt:

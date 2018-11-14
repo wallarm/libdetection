@@ -13,7 +13,7 @@
 static const unsigned char selfsyms[] = {
     SSYM('.'), SSYM(','), SSYM('('), SSYM(')'),
     SSYM('*'), SSYM('['), SSYM(']'),
-    SSYM(';'),
+    SSYM(';'), SSYM('='),
 };
 
 int
@@ -96,8 +96,8 @@ sqli_get_token(
       re2c:condenumprefix  = sqli_;
 
       whitespace = [ \t\v\b\r\n\f\xA0]|[\xC2][\xA0];
-      self = [,\.()\[\];];
-      opchar = [~!^&|?%:+\-*/<>=];
+      self = [,\.()\[\];=];
+      opchar = [~!^&|?%:+\-*/<>];
       opchar_nocomment = [~!^&|?%+<>=];
       key_end = [^a-zA-Z0-9_];
 
