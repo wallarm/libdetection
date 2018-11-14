@@ -33,11 +33,14 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR
 %token <data> '.' ',' '(' ')' '*' '[' ']' ';'
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
+              TOK_MOD TOK_XOR TOK_REGEXP
+              TOK_BINARY TOK_SOUNDS TOK_OUTFILE
 %token <data> TOK_FOR
 %token <data> TOK_FROM TOK_INTO TOK_WHERE
 %token <data> TOK_AS TOK_ON TOK_USING
 %token <data> TOK_UNION TOK_INTERSECT TOK_EXCEPT TOK_ALL
 %token <data> TOK_ORDER TOK_GROUP TOK_BY TOK_HAVING
+%token <data> TOK_TOP TOK_PERCENT
 %token <data> TOK_CROSS TOK_FULL TOK_INNER TOK_LEFT TOK_RIGHT
 %token <data> TOK_LIMIT TOK_OFFSET
 %token <data> TOK_NATURAL TOK_JOIN
@@ -46,9 +49,10 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DROP
 %token <data> TOK_COMMA
 %token <data> TOK_SET
-%token <data> TOK_BETWEEN TOK_LIKE TOK_IN TOK_BOOLEAN TOK_MODE
-%token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_END
-%token <data> TOK_WAITFOR TOK_DELAY
+%token <data> TOK_BETWEEN TOK_LIKE TOK_RLIKE TOK_IN TOK_BOOLEAN TOK_MODE
+%token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_BEGIN TOK_END
+%token <data> TOK_WAITFOR TOK_DELAY TOK_TIME
+%token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -108,6 +112,10 @@ update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
 sql_no_parens:
         select
         | update
+        | begin_end
+        | waitfor_delay
+        | func
+        | create_function
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -224,6 +232,7 @@ expr:   expr_common
         ;
 
 func_name:  colref_exact
+        | TOK_LEFT
         ;
 
 expr_list:
@@ -293,8 +302,12 @@ operator: TOK_OR
         | TOK_IS
         | TOK_NOT
         | TOK_DIV
+        | TOK_MOD
+        | TOK_XOR
+        | TOK_REGEXP
         | TOK_BETWEEN
         | TOK_LIKE
+        | TOK_RLIKE
         | TOK_OPERATOR
         | TOK_CASE
         | TOK_WHEN
@@ -303,6 +316,10 @@ operator: TOK_OR
         | TOK_WAITFOR
         | TOK_DELAY
         | TOK_IN
+        | TOK_BINARY
+        | TOK_SOUNDS
+        | TOK_INTO
+        | TOK_OUTFILE
         | '*'
         ;
 
@@ -469,8 +486,11 @@ union_c: union_tk[tk] {
         }
         ;
 
-all_opt:
+all_distinct_opt:
         | TOK_ALL[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        | TOK_DISTINCT[tk] {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -480,11 +500,81 @@ select_parens:
         | '('[u1] select_parens ')'[u2] {YYUSE($u1); YYUSE($u2);}
         ;
 
-select:   TOK_SELECT[tk] select_args into_opt from_opt
+percent_opt:
+        | TOK_PERCENT[tk] {
+                sqli_store_data(ctx, &$tk);
+        }
+
+top_opt:
+        | TOK_TOP[tk] data_name[data] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
+select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
-        | select union_c all_opt select_parens
+        | select union_c all_distinct_opt select_parens
+        ;
+
+begin_end: TOK_BEGIN[tk1] multiple_sqls TOK_END[tk2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+waitfor_delay: TOK_WAITFOR[tk1] TOK_DELAY[tk2] data_name[data] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_WAITFOR[tk1] TOK_TIME[tk2] data_name[data] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$data);
+        }
+        ;
+
+or_replace_opt:
+        | TOK_OR[tk1] TOK_REPLACE[tk2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+create_function_body: TOK_AS[tk] data_name[obj_file] ','[u1] data_name[link_symbol] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$obj_file);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$link_symbol);
+        }
+        | TOK_LANGUAGE[tk] data_name[lang_name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$lang_name);
+        }
+        | TOK_STRICT[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+create_function_bodies: create_function_body
+        | create_function_bodies create_function_body
+        ;
+
+create_function: TOK_CREATE[tk1] or_replace_opt TOK_FUNCTION[tk2] func
+                 TOK_RETURNS[tk3] data_name[rettype] create_function_bodies {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$rettype);
+        }
         ;
 
 command:  TOK_INSERT
@@ -519,7 +609,7 @@ multiple_sqls: sql_parens semicolons_opt
 
 select_after_where_optunion:
         select_after_where
-        | select_after_where union_c all_opt select_parens
+        | select_after_where union_c all_distinct_opt select_parens
         ;
 
 after_exp_cont_op_noexpr:
@@ -528,7 +618,7 @@ after_exp_cont_op_noexpr:
 
 after_exp_cont_op:
         expr after_exp_cont_op_noexpr
-        | after_exp_cont_op_noexpr
+        | where_opt after_exp_cont_op_noexpr
         ;
 
 after_exp_cont:
