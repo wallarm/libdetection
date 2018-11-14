@@ -291,6 +291,7 @@ Tsqli_create_func(void)
     CU_ASSERT_EQUAL(detect_start(detect), 0);
     CU_ASSERT_EQUAL(
         detect_add_data(detect,
+
                         STR_LEN_ARGS("1; CREATE OR REPLACE FUNCTION SLEEP(int) \
                                       RETURNS int AS '/lib/libc.so.6','sleep'  \
                                       language 'C' STRICT"), true), 0);
@@ -298,6 +299,24 @@ Tsqli_create_func(void)
     CU_ASSERT_EQUAL(detect_stop(detect), 0);
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
+
+static void
+Tsqli_executee(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect,
+                        STR_LEN_ARGS("EXEC master.dbo.xp_cmdshell 'cmd'"),
+                        true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 
 int
 main(void)
@@ -322,6 +341,7 @@ main(void)
         {"func", Tsqli_func},
         {"var_start_with_dollar", Tsqli_var_start_with_dollar},
         {"create_func", Tsqli_create_func},
+        {"executee", Tsqli_executee},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
