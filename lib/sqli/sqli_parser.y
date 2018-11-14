@@ -55,6 +55,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_WAITFOR TOK_DELAY TOK_TIME
 %token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token <data> TOK_SHUTDOWN
+%token <data> TOK_DECLARE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -119,6 +120,7 @@ sql_no_parens:
         | func
         | create_function
         | shutdown
+        | declare
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -613,6 +615,28 @@ create_function: TOK_CREATE[tk1] or_replace_opt TOK_FUNCTION[tk2] func
 
 shutdown: TOK_SHUTDOWN[tk] {
             sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+var_list: data_name[name] {
+            sqli_store_data(ctx, &$name);
+        }
+        | data_name[name] ','[u1] var_list {
+            sqli_store_data(ctx, &$name);
+            YYUSE($u1);
+        }
+        ;
+
+declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+        }
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$len);
+            YYUSE($u2);
         }
         ;
 
