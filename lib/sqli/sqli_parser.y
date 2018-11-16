@@ -41,6 +41,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_UNION TOK_INTERSECT TOK_EXCEPT TOK_ALL
 %token <data> TOK_ORDER TOK_GROUP TOK_BY TOK_HAVING
 %token <data> TOK_TOP TOK_PERCENT
+%token <data> TOK_DESC TOK_ASC
 %token <data> TOK_CROSS TOK_FULL TOK_INNER TOK_LEFT TOK_RIGHT
 %token <data> TOK_LIMIT TOK_OFFSET
 %token <data> TOK_NATURAL TOK_JOIN
@@ -440,8 +441,23 @@ having_opt:
         }
         ;
 
+order:
+        | TOK_DESC[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        | TOK_ASC [tk]{
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+sort_list:
+          expr order
+        | sort_list ','[u1] expr order {YYUSE($u1);}
+        | error
+        ;
+
 sort_opt:
-        | TOK_ORDER[tk1] TOK_BY[tk2] func_args_list {
+        | TOK_ORDER[tk1] TOK_BY[tk2] sort_list {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }

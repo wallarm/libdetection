@@ -555,6 +555,12 @@ sqli_get_token(
       <INITIAL> 'STRICT'/key_end {
           KEYNAME_SET_RET(ctx, arg, STRICT, SQLI_KEY_INSTR);
       }
+      <INITIAL> 'DESC'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DESC, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ASC'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ASC, SQLI_KEY_INSTR);
+      }
       <INITIAL> opchar => OPERATOR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
