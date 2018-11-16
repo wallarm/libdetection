@@ -380,6 +380,21 @@ Tsqli_asc_desc(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_shutdown(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1; SHUTDOWN"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -407,6 +422,7 @@ main(void)
         {"join_wo_join_qual", Tsqli_join_wo_join_qual},
         {"empty_schema", Tsqli_empty_schema},
         {"asc_desc", Tsqli_asc_desc},
+        {"shutdown", Tsqli_shutdown},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
