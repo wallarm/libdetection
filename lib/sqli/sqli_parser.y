@@ -469,8 +469,14 @@ select_after_where:
         group_opt having_opt sort_opt select_extras_opt
         ;
 
+outfile_opt:
+        | TOK_OUTFILE[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
 into_opt:
-        | TOK_INTO[tk] colref_exact {
+        | TOK_INTO[tk] outfile_opt colref_exact {
             sqli_store_data(ctx, &$tk);
         }
         ;
