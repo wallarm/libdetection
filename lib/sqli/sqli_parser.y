@@ -53,6 +53,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_BEGIN TOK_END
 %token <data> TOK_WAITFOR TOK_DELAY TOK_TIME
 %token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
+%token <data> TOK_SHUTDOWN
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -116,6 +117,7 @@ sql_no_parens:
         | waitfor_delay
         | func
         | create_function
+        | shutdown
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -574,6 +576,11 @@ create_function: TOK_CREATE[tk1] or_replace_opt TOK_FUNCTION[tk2] func
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$rettype);
+        }
+        ;
+
+shutdown: TOK_SHUTDOWN[tk] {
+            sqli_store_data(ctx, &$tk);
         }
         ;
 
