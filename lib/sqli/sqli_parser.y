@@ -527,6 +527,10 @@ select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
+        | TOK_SELECT[tk] top_opt select_args from_opt into_opt
+          where_opt select_after_where {
+            sqli_store_data(ctx, &$tk);
+        }
         | select union_c all_distinct_opt select_parens
         ;
 
