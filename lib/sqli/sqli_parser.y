@@ -31,7 +31,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';'
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '='
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE
@@ -41,6 +41,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_UNION TOK_INTERSECT TOK_EXCEPT TOK_ALL
 %token <data> TOK_ORDER TOK_GROUP TOK_BY TOK_HAVING
 %token <data> TOK_TOP TOK_PERCENT
+%token <data> TOK_DESC TOK_ASC
 %token <data> TOK_CROSS TOK_FULL TOK_INNER TOK_LEFT TOK_RIGHT
 %token <data> TOK_LIMIT TOK_OFFSET
 %token <data> TOK_NATURAL TOK_JOIN
@@ -53,6 +54,8 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CASE TOK_WHEN TOK_THEN TOK_ELSE TOK_BEGIN TOK_END
 %token <data> TOK_WAITFOR TOK_DELAY TOK_TIME
 %token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
+%token <data> TOK_SHUTDOWN
+%token <data> TOK_DECLARE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -116,6 +119,9 @@ sql_no_parens:
         | waitfor_delay
         | func
         | create_function
+        | shutdown
+        | declare
+        | execute
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -138,6 +144,12 @@ colref_exact:
         | data_name[dname] '.'[u1] data_name[tname] '.'[u2] data_name[colname] {
             sqli_store_data(ctx, &$dname);
             sqli_store_data(ctx, &$tname);
+            sqli_store_data(ctx, &$colname);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | data_name[dname] '.'[u1] '.'[u2] data_name[colname] {
+            sqli_store_data(ctx, &$dname);
             sqli_store_data(ctx, &$colname);
             YYUSE($u1);
             YYUSE($u2);
@@ -321,6 +333,7 @@ operator: TOK_OR
         | TOK_INTO
         | TOK_OUTFILE
         | '*'
+        | '='
         ;
 
 select_distinct_opt:
@@ -388,7 +401,7 @@ natural_opt:
         ;
 
 join_qual:
-        TOK_USING[tk] '('[u1] name_list ')'[u2] {
+        | TOK_USING[tk] '('[u1] name_list ')'[u2] {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
             YYUSE($u2);
@@ -434,8 +447,23 @@ having_opt:
         }
         ;
 
+order:
+        | TOK_DESC[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        | TOK_ASC [tk]{
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+sort_list:
+          expr order
+        | sort_list ','[u1] expr order {YYUSE($u1);}
+        | error
+        ;
+
 sort_opt:
-        | TOK_ORDER[tk1] TOK_BY[tk2] func_args_list {
+        | TOK_ORDER[tk1] TOK_BY[tk2] sort_list {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
@@ -469,8 +497,14 @@ select_after_where:
         group_opt having_opt sort_opt select_extras_opt
         ;
 
+outfile_opt:
+        | TOK_OUTFILE[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
 into_opt:
-        | TOK_INTO[tk] colref_exact {
+        | TOK_INTO[tk] outfile_opt colref_exact {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -518,6 +552,10 @@ top_opt:
         ;
 
 select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
+          where_opt select_after_where {
+            sqli_store_data(ctx, &$tk);
+        }
+        | TOK_SELECT[tk] top_opt select_args from_opt into_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
@@ -577,8 +615,55 @@ create_function: TOK_CREATE[tk1] or_replace_opt TOK_FUNCTION[tk2] func
         }
         ;
 
+shutdown: TOK_SHUTDOWN[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+var_list: data_name[name] {
+            sqli_store_data(ctx, &$name);
+        }
+        | data_name[name] ','[u1] var_list {
+            sqli_store_data(ctx, &$name);
+            YYUSE($u1);
+        }
+        ;
+
+declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+        }
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$len);
+            YYUSE($u2);
+        }
+        ;
+
+param: data_name[value] {
+            sqli_store_data(ctx, &$value);
+        }
+        | data_name[name] '='[u1] data_name[value] {
+            sqli_store_data(ctx, &$name);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$value);
+        }
+        ;
+
+param_list: param
+        | param ','[u1] param_list {
+            YYUSE($u1);
+        }
+        ;
+execute:
+        TOK_EXECUTE[tk] func_name param_list {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
 command:  TOK_INSERT
-        | TOK_EXECUTE
         | TOK_DELETE
         | TOK_ATTACH
         | TOK_DROP
