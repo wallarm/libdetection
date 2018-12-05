@@ -146,11 +146,18 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
-      <INSTRING,SQUOTE,DQUOTE,BQUOTE> [\x00] => INITIAL {
-          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
-          arg->data.flags |= SQLI_DATA_NOEND;
-          YYSETSTATE(-1);
-          RET_DATA(DATA, ctx, arg);
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE> [\x00] {
+          if (ctx->lexer.re2c.fin && ctx->lexer.re2c.tmp_data_in_use &&
+              ctx->lexer.re2c.pos >= ctx->lexer.re2c.tmp_data + ctx->lexer.re2c.tmp_data_siz) {
+              YYSETCONDITION(sqli_INITIAL);
+              DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+              arg->data.flags |= SQLI_DATA_NOEND;
+              YYSETSTATE(-1);
+              RET_DATA(DATA, ctx, arg);
+          }
+          detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto yy0;
       }
       <INSTRING,SQUOTE,DQUOTE,BQUOTE> . {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
