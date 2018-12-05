@@ -464,6 +464,12 @@ Tsqli_semicolons_opt(void)
     s_sqli_attacks({CSTR_LEN("1 SELECT 1 SELECT 2")});
 }
 
+static void
+Tsqli_expr(void)
+{
+    s_sqli_attacks({CSTR_LEN("-(1) WHERE 1=1")});
+}
+
 int
 main(void)
 {
@@ -521,6 +527,7 @@ main(void)
         {"if_else", Tsqli_if_else},
         {"while", Tsqli_while},
         {"semicolons_opt", Tsqli_semicolons_opt},
+        {"expr", Tsqli_expr},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
