@@ -445,6 +445,26 @@ Tsqli_execute(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_drop(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("DROP TABLE table_name"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+   CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("DROP FUNCTION func_name"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 
 int
 main(void)
@@ -477,6 +497,7 @@ main(void)
         {"into_outfile", Tsqli_into_outfile},
         {"declare", Tsqli_declare},
         {"execute", Tsqli_execute},
+        {"drop", Tsqli_drop},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
