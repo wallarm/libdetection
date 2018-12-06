@@ -182,7 +182,7 @@ expr_common:
         | operator expr {
             sqli_store_data(ctx, &$operator);
         }
-        | '('[tk] select ')'[u1] {
+        | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
