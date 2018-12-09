@@ -428,6 +428,11 @@ from_opt:
         | TOK_FROM[key] from_list {
             sqli_store_data(ctx, &$key);
         }
+        | TOK_FROM[key] '('[u1] from_list ')'[u2] {
+              sqli_store_data(ctx, &$key);
+              YYUSE($u1);
+              YYUSE($u2);
+        }
         ;
 
 where_opt:
