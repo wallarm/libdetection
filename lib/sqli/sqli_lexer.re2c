@@ -580,6 +580,15 @@ sqli_get_token(
       <INITIAL> 'TABLE'/key_end {
           KEYNAME_SET_RET(ctx, arg, TABLE, SQLI_KEY_INSTR);
       }
+      <INITIAL> 'IGNORE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, IGNORE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'LOW_PRIORITY'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LOW_PRIORITY, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'QUICK'/key_end {
+          KEYNAME_SET_RET(ctx, arg, QUICK, SQLI_KEY_INSTR);
+      }
       <INITIAL> opchar => OPERATOR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
