@@ -89,7 +89,7 @@ Tsqli_union_distinct(void)
 }
 
 static void
-Tsqli_rlike_mod_xor_regexp_binary(void)
+Tsqli_operators(void)
 {
     struct detect *detect;
     uint32_t attack_types;
@@ -128,6 +128,12 @@ Tsqli_rlike_mod_xor_regexp_binary(void)
     CU_ASSERT_EQUAL(detect_start(detect), 0);
     CU_ASSERT_EQUAL(
         detect_add_data(detect, STR_LEN_ARGS("1 AND 1 SOUNDS LIKE 1"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1 MATCH(col) AGAINST('text')"),
+                        true), 0);
     CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
     CU_ASSERT_EQUAL(detect_stop(detect), 0);
     CU_ASSERT_EQUAL(detect_close(detect), 0);
@@ -492,7 +498,7 @@ main(void)
         {"rce", Tsqli_rce},
         {"inj_in_table_name", Tsqli_inj_in_table_name},
         {"union_distinct", Tsqli_union_distinct},
-        {"rlike_mod_xor_regexp_binary", Tsqli_rlike_mod_xor_regexp_binary},
+        {"operators", Tsqli_operators},
         {"begin_end", Tsqli_begin_end},
         {"waitfor", Tsqli_waitfor},
         {"top", Tsqli_top},
