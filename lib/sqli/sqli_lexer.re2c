@@ -591,7 +591,7 @@ sqli_get_token(
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_OPERATOR;
       }
-      <INITIAL> ['] => SQUOTE {
+      <INITIAL> [']|'_latin'[17]whitespace*[']|'n'[']|'x'[']|'_utf8'whitespace*['] => SQUOTE {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           goto sqli_SQUOTE;
       }
