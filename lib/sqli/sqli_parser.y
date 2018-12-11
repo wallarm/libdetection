@@ -57,6 +57,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_SHUTDOWN
 %token <data> TOK_DECLARE
 %token <data> TOK_TABLE
+%token <data> TOK_USE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -124,6 +125,7 @@ sql_no_parens:
         | declare
         | execute
         | drop
+        | use
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -672,6 +674,13 @@ drop:     TOK_DROP[tk1] TOK_FUNCTION[tk2] func_name {
         | TOK_DROP[tk1] TOK_TABLE[tk2] func_name {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+use:
+        TOK_USE[tk] data_name[database] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$database);
         }
         ;
 
