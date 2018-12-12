@@ -25,6 +25,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %type <data> union_tk
 %type <data> func_args_modifier_tk
 %type <data> post_expr_tk
+%type <data> delete_modifier
 
 %token TOK_START_DATA
 %token TOK_START_STRING
@@ -59,6 +60,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DECLARE
 %token <data> TOK_TABLE
 %token <data> TOK_USE
+%token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -127,6 +129,7 @@ sql_no_parens:
         | execute
         | drop
         | use
+        | _delete
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -693,8 +696,44 @@ use:
         }
         ;
 
+delete_modifier:
+         TOK_IGNORE
+       | TOK_LOW_PRIORITY
+       | TOK_QUICK
+       ;
+
+delete_modifier_opt:
+        | delete_modifier[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+limit_op: TOK_LIMIT[tk] data_name[row_count] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$row_count);
+        }
+        ;
+
+_delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt sort_opt limit_op {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$key);
+        }
+        | TOK_DELETE[tk1] delete_modifier_opt from_list TOK_FROM[key] from_list where_opt {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$key);
+        }
+        | TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list TOK_USING[tk2] from_list where_opt {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$key);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_DELETE[tk1] top_opt TOK_FROM[key] from_list where_opt {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$key);
+        }
+        ;
+
 command:  TOK_INSERT
-        | TOK_DELETE
         | TOK_ATTACH
         ;
 
