@@ -34,7 +34,8 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> '.' ',' '(' ')' '*' '[' ']' ';' '='
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
-              TOK_BINARY TOK_SOUNDS TOK_OUTFILE
+              TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST
+%token <data> TOK_COLLATE
 %token <data> TOK_FOR
 %token <data> TOK_FROM TOK_INTO TOK_WHERE
 %token <data> TOK_AS TOK_ON TOK_USING
@@ -57,6 +58,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_SHUTDOWN
 %token <data> TOK_DECLARE
 %token <data> TOK_TABLE
+%token <data> TOK_USE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -124,6 +126,7 @@ sql_no_parens:
         | declare
         | execute
         | drop
+        | use
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -182,7 +185,7 @@ expr_common:
         | operator expr {
             sqli_store_data(ctx, &$operator);
         }
-        | '('[tk] select ')'[u1] {
+        | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
@@ -334,6 +337,9 @@ operator: TOK_OR
         | TOK_SOUNDS
         | TOK_INTO
         | TOK_OUTFILE
+        | TOK_MATCH
+        | TOK_AGAINST
+        | TOK_COLLATE
         | '*'
         | '='
         ;
@@ -427,6 +433,11 @@ from_list: table_ref
 from_opt:
         | TOK_FROM[key] from_list {
             sqli_store_data(ctx, &$key);
+        }
+        | TOK_FROM[key] '('[u1] from_list ')'[u2] {
+              sqli_store_data(ctx, &$key);
+              YYUSE($u1);
+              YYUSE($u2);
         }
         ;
 
@@ -672,6 +683,13 @@ drop:     TOK_DROP[tk1] TOK_FUNCTION[tk2] func_name {
         | TOK_DROP[tk1] TOK_TABLE[tk2] func_name {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+use:
+        TOK_USE[tk] data_name[database] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$database);
         }
         ;
 
