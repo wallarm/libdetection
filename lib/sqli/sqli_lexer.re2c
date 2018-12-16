@@ -601,6 +601,24 @@ sqli_get_token(
       <INITIAL> 'QUICK'/key_end {
           KEYNAME_SET_RET(ctx, arg, QUICK, SQLI_KEY_INSTR);
       }
+      <INITIAL> 'LOAD'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LOAD, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'DATA'/key_end {
+          KEYNAME_SET_RET(ctx, arg, DATA2, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'XML'/key_end {
+          KEYNAME_SET_RET(ctx, arg, XML, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'CONCURRENT'/key_end {
+          KEYNAME_SET_RET(ctx, arg, CONCURRENT, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'LOCAL'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LOCAL, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'INFILE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, INFILE, SQLI_KEY_INSTR);
+      }
       <INITIAL> opchar => OPERATOR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
