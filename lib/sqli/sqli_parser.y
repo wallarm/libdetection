@@ -64,6 +64,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
 %token <data> TOK_PRINT
 %token <data> TOK_LOAD TOK_DATA2 TOK_XML TOK_CONCURRENT TOK_LOCAL TOK_INFILE
+%token <data> TOK_PROCEDURE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -520,8 +521,18 @@ select_extras_opt:
         | select_extras
         ;
 
+procedure:
+          TOK_PROCEDURE[tk1] func {
+            sqli_store_data(ctx, &$tk1);
+        }
+        ;
+
+procedure_opt:
+        | procedure
+        ;
+
 select_after_where:
-        group_opt having_opt sort_opt select_extras_opt
+        group_opt having_opt sort_opt select_extras_opt procedure_opt
         ;
 
 outfile_opt:
