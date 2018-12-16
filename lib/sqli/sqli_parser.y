@@ -26,6 +26,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %type <data> func_args_modifier_tk
 %type <data> post_expr_tk
 %type <data> delete_modifier
+%type <data> load_modifier data_xml
 
 %token TOK_START_DATA
 %token TOK_START_STRING
@@ -62,6 +63,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
 %token <data> TOK_PRINT
+%token <data> TOK_LOAD TOK_DATA2 TOK_XML TOK_CONCURRENT TOK_LOCAL TOK_INFILE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -100,6 +102,7 @@ start_string: TOK_START_STRING {
 
 data_name:  TOK_DATA
         |   TOK_NAME
+        |   TOK_DATA2
         /* Tokens-as-identifiers here */
         ;
 
@@ -132,6 +135,7 @@ sql_no_parens:
         | use
         | _delete
         | print
+        | load
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -742,6 +746,37 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
 
 print:    TOK_PRINT[tk] expr {
             sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+load_modifier:
+          TOK_LOW_PRIORITY
+        | TOK_CONCURRENT
+        ;
+
+load_modifier_opt:
+        | load_modifier[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+local_opt:
+        | TOK_LOCAL[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+data_xml:
+          TOK_DATA2
+        | TOK_XML
+        ;
+
+load:
+        TOK_LOAD[tk1] data_xml[tk2] load_modifier_opt local_opt TOK_INFILE[tk3] data_name[file_name] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$file_name);
         }
         ;
 
