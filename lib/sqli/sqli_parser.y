@@ -777,6 +777,9 @@ after_exp_cont_op:
 after_exp_cont:
         close_multiple_parens_opt semicolons multiple_sqls
         | close_multiple_parens after_exp_cont_op after_exp_cont
+        | close_multiple_parens ','[u1] select_list from_opt where_opt after_exp_cont {
+            YYUSE($u1);
+        }
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
         ;
 
