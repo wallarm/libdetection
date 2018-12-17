@@ -292,6 +292,12 @@ Tsqli_0x(void)
     s_sqli_attacks({CSTR_LEN("SELECT 0x")});
 }
 
+static void
+Tsqli_print(void)
+{
+    s_sqli_attacks({CSTR_LEN("print '1'")});
+}
+
 int
 main(void)
 {
@@ -331,6 +337,7 @@ main(void)
         {"use", Tsqli_use},
         {"delete", Tsqli_delete},
         {"0x", Tsqli_0x},
+        {"print", Tsqli_print},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
