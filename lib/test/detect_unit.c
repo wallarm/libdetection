@@ -564,6 +564,36 @@ Tsqli_delete(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_if_else(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect,STR_LEN_ARGS("1'; IF (1=1) UPDATE table_name \
+                                             SET column1 = value1"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1'; IF (1=1) UPDATE table_name \
+                                              SET column1 = value1 ELSE UPDATE \
+                                              table_name SET column1 = value1"),
+                        true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("SELECT IF(1=1,1, 0)"),
+                        true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -602,6 +632,7 @@ main(void)
         {"string", Tsqli_string},
         {"use", Tsqli_use},
         {"delete", Tsqli_delete},
+        {"if_else", Tsqli_if_else},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
