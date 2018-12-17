@@ -310,6 +310,13 @@ Tsqli_load(void)
     s_sqli_attacks({CSTR_LEN("LOAD DATA LOW_PRIORITY INFILE 'file'")});
 }
 
+static void
+Tsqli_procedure_analyse(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT col FROM table_name "
+                             "PROCEDURE ANALYSE(7, 42);")});
+}
+
 int
 main(void)
 {
@@ -351,6 +358,7 @@ main(void)
         {"0x", Tsqli_0x},
         {"print", Tsqli_print},
         {"load", Tsqli_load},
+        {"procedure_analyse", Tsqli_procedure_analyse},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
