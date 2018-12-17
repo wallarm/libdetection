@@ -373,6 +373,12 @@ Tsqli_open(void)
     s_sqli_attacks({CSTR_LEN("OPEN tablecursor")});
 }
 
+static void
+Tsqli_inner_select(void)
+{
+    s_sqli_attacks({CSTR_LEN("1 union select 2 where 1=1), 3 where 1=1")});
+}
+
 int
 main(void)
 {
@@ -422,6 +428,7 @@ main(void)
         {"insert", Tsqli_insert},
         {"var", Tsqli_var},
         {"open", Tsqli_open},
+        {"inner_select", Tsqli_inner_select},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
