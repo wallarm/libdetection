@@ -311,6 +311,7 @@ post_exprs_opt:
 func_name:  colref_exact
         | TOK_LEFT
         | TOK_DATABASE
+        | TOK_IF
         ;
 
 expr_list:
