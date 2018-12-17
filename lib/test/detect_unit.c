@@ -286,6 +286,12 @@ Tsqli_delete(void)
                   "FROM table_name WHERE 1=1 ORDER BY col ASC LIMIT 42")});
 }
 
+static void
+Tsqli_0x(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT 0x")});
+}
+
 int
 main(void)
 {
@@ -324,6 +330,7 @@ main(void)
         {"string", Tsqli_string},
         {"use", Tsqli_use},
         {"delete", Tsqli_delete},
+        {"0x", Tsqli_0x},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
