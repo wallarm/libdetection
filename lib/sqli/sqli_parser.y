@@ -111,7 +111,6 @@ data_name:  TOK_DATA
 data_cont:
         | expr post_exprs_opt after_exp_cont_op_noexpr after_exp_cont
         | expr post_exprs_opt where_opt after_exp_cont_op_noexpr after_exp_cont
-        | close_multiple_parens_opt semicolons_opt multiple_sqls
         | after_exp_cont
         ;
 
