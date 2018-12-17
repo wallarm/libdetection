@@ -280,15 +280,6 @@ post_exprs_opt:
         | post_exprs
         ;
 
-expr:   expr_common
-        | colref_exact
-        | colref_asterisk
-        | expr operator expr {
-            sqli_store_data(ctx, &$operator);
-        }
-        | expr post_exprs
-        ;
-
 func_name:  colref_exact
         | TOK_LEFT
         | TOK_DATABASE
@@ -354,6 +345,15 @@ func:     func_name func_args {
             };
             sqli_store_data(ctx, &key);
         }
+        ;
+
+expr:   expr_common
+        | colref_exact
+        | colref_asterisk
+        | expr operator expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | expr post_exprs
         ;
 
 operator: TOK_OR
