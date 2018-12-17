@@ -109,6 +109,12 @@ Tsqli_operators(void)
         {CSTR_LEN("1' INTO OUTFILE '1")},
         {CSTR_LEN("1 AND 1 SOUNDS LIKE 1")},
         {CSTR_LEN("1 MATCH(col) AGAINST('text')")},
+        {CSTR_LEN("1 AND EXIST(SELECT 1)")},
+        {CSTR_LEN("1 AND xmlelement('user', "
+                  "login || ':' || pass).getStringVal()")},
+        {CSTR_LEN("1 AND FileToClob('/etc/passwd', "
+                  "'server')::html")},
+        {CSTR_LEN("1 AND U&'pgsql evade' uescape '!'")},
     );
 }
 
