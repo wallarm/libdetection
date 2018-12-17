@@ -203,6 +203,32 @@ expr_common:
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
+        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+        }
+        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+        }
+        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END[tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
+        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END [tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
         ;
 
 op_expr:  expr_common
@@ -329,10 +355,6 @@ operator: TOK_OR
         | TOK_LIKE
         | TOK_RLIKE
         | TOK_OPERATOR
-        | TOK_CASE
-        | TOK_WHEN
-        | TOK_THEN
-        | TOK_ELSE
         | TOK_WAITFOR
         | TOK_DELAY
         | TOK_IN
