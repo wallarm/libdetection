@@ -304,6 +304,12 @@ Tsqli_print(void)
     s_sqli_attacks({CSTR_LEN("print '1'")});
 }
 
+static void
+Tsqli_load(void)
+{
+    s_sqli_attacks({CSTR_LEN("LOAD DATA LOW_PRIORITY INFILE 'file'")});
+}
+
 int
 main(void)
 {
@@ -344,6 +350,7 @@ main(void)
         {"delete", Tsqli_delete},
         {"0x", Tsqli_0x},
         {"print", Tsqli_print},
+        {"load", Tsqli_load},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
