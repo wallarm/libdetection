@@ -137,6 +137,7 @@ sql_no_parens:
         | _delete
         | print
         | load
+        | set
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -788,6 +789,11 @@ load:
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$file_name);
+        }
+        ;
+
+set:      TOK_SET[tk] expr {
+            sqli_store_data(ctx, &$tk);
         }
         ;
 
