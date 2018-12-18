@@ -344,6 +344,11 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(NAME, ctx, arg);
       }
+      <VAR> [:] => INITIAL {
+          detect_buf_deinit(&ctx->lexer.buf);
+          YYSETSTATE(-1);
+          KEYNAME_SET_RET(ctx, arg, LABEL, SQLI_KEY_INSTR);
+      }
       <VAR> [^] => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
