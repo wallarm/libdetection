@@ -317,6 +317,12 @@ Tsqli_procedure_analyse(void)
                              "PROCEDURE ANALYSE(7, 42);")});
 }
 
+static void
+Tsqli_set(void)
+{
+    s_sqli_attacks({CSTR_LEN("SET @t=1")});
+}
+
 int
 main(void)
 {
@@ -359,6 +365,7 @@ main(void)
         {"print", Tsqli_print},
         {"load", Tsqli_load},
         {"procedure_analyse", Tsqli_procedure_analyse},
+        {"set", Tsqli_set},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
