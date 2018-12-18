@@ -130,6 +130,7 @@ sql_no_parens:
         | drop
         | use
         | _delete
+        | set
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -730,6 +731,11 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
         | TOK_DELETE[tk1] top_opt TOK_FROM[key] from_list where_opt {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$key);
+        }
+        ;
+
+set:      TOK_SET[tk] expr {
+            sqli_store_data(ctx, &$tk);
         }
         ;
 
