@@ -59,7 +59,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token <data> TOK_SHUTDOWN
 %token <data> TOK_DECLARE
-%token <data> TOK_TABLE
+%token <data> TOK_TABLE TOK_DATABASE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
 %token <data> TOK_PRINT
@@ -709,6 +709,10 @@ drop:     TOK_DROP[tk1] TOK_FUNCTION[tk2] func_name {
             sqli_store_data(ctx, &$tk2);
         }
         | TOK_DROP[tk1] TOK_TABLE[tk2] func_name {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_DROP[tk1] TOK_DATABASE[tk2] func_name {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
