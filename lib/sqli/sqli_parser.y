@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DECLARE
 %token <data> TOK_TABLE TOK_DATABASE
 %token <data> TOK_USE
+%token <data> TOK_WHILE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
 %token <data> TOK_PRINT
 %token <data> TOK_LOAD TOK_DATA2 TOK_XML TOK_CONCURRENT TOK_LOCAL TOK_INFILE
@@ -155,6 +156,7 @@ sql_no_parens:
         | open
         | alter
         | if_else
+        | _while
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -949,6 +951,11 @@ if_else:  TOK_IF[tk1] expr sql_parens {
         | TOK_IF[tk1] expr sql_parens TOK_ELSE[tk2] sql_parens {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+_while:  TOK_WHILE[tk1] expr sql_parens {
+            sqli_store_data(ctx, &$tk1);
         }
         ;
 
