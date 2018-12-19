@@ -432,11 +432,23 @@ select_list: select_arg
         | select_list ','[u1] select_arg {YYUSE($u1);}
         ;
 
+top_opt:
+        | TOK_TOP[tk] data_name[data] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
 select_args: select_distinct_opt
-        | select_distinct_opt '*'[key] {
+        | select_distinct_opt top_opt '*'[key] {
             sqli_store_data(ctx, &$key);
         }
-        | select_distinct_opt select_list
+        | select_distinct_opt top_opt select_list
         ;
 
 as_opt:
@@ -654,23 +666,11 @@ percent_opt:
                 sqli_store_data(ctx, &$tk);
         }
 
-top_opt:
-        | TOK_TOP[tk] data_name[data] percent_opt {
-            sqli_store_data(ctx, &$tk);
-            sqli_store_data(ctx, &$data);
-        }
-        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
-            YYUSE($u2);
-        }
-        ;
-
-select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
+select:   TOK_SELECT[tk] select_args into_opt from_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
-        | TOK_SELECT[tk] top_opt select_args from_opt into_opt
+        | TOK_SELECT[tk] select_args from_opt into_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
