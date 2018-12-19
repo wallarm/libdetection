@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_TABLE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
+%token <data> TOK_PATH TOK_XML
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -492,6 +493,15 @@ select_extra_tk:
             $$ = $tk;
             $$.value = (struct detect_str){CSTR_LEN("FOR_UPDATE")};
             YYUSE($u1);
+        }
+        | TOK_FOR[tk] TOK_XML[u1] TOK_PATH[u2] '('[u3] data_name[elem] ')'[u4] {
+            $$ = $tk;
+            $$.value = (struct detect_str){CSTR_LEN("TOK_FOR TOK_XML TOK_PATH")};
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+            sqli_store_data(ctx, &$elem);
+            YYUSE($u4);
         }
         ;
 
