@@ -255,6 +255,7 @@ Tsqli_drop(void)
     s_sqli_attacks(
         {CSTR_LEN("DROP TABLE table_name")},
         {CSTR_LEN("DROP FUNCTION func_name")},
+        {CSTR_LEN("DROP DATABASE db_name")},
     );
 }
 
