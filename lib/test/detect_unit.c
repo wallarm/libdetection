@@ -281,7 +281,7 @@ Tsqli_string(void)
 static void
 Tsqli_use(void)
 {
-    s_sqli_attacks({CSTR_LEN("USE database")});
+    s_sqli_attacks({CSTR_LEN("USE db_name")});
 }
 
 static void
