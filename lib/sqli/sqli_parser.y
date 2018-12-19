@@ -253,6 +253,7 @@ expr:   expr_common
 
 func_name:  colref_exact
         | TOK_LEFT
+        | TOK_DATABASE
         ;
 
 expr_list:
