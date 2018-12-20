@@ -238,8 +238,8 @@ Tsqli_declare(void)
     s_sqli_attacks(
         {CSTR_LEN("1; DECLARE name varchar(42)")},
         {CSTR_LEN("1; DECLARE name CURSOR FOR select 1")},
+        {CSTR_LEN("1; DECLARE name varchar(42) = 'str'")},
     );
-    s_sqli_attacks({CSTR_LEN("1; DECLARE name varchar(42)")});
 }
 
 static void
