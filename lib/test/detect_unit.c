@@ -234,6 +234,10 @@ Tsqli_into_outfile(void)
 static void
 Tsqli_declare(void)
 {
+    s_sqli_attacks(
+        {CSTR_LEN("1; DECLARE name varchar(42)")},
+        {CSTR_LEN("1; DECLARE name CURSOR FOR select 1")},
+    );
     s_sqli_attacks({CSTR_LEN("1; DECLARE name varchar(42)")});
 }
 
