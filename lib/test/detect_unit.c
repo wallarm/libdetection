@@ -356,6 +356,12 @@ Tsqli_insert(void)
     );
 }
 
+static void
+Tsqli_var(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT привет#")});
+}
+
 int
 main(void)
 {
@@ -403,6 +409,7 @@ main(void)
         {"call", Tsqli_call},
         {"for_xml", Tsqli_for_xml},
         {"insert", Tsqli_insert},
+        {"var", Tsqli_var},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
