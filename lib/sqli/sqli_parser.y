@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_TABLE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
+%token <data> TOK_WITHIN
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -183,8 +184,16 @@ name_list: colref_exact
         | name_list ','[u1] colref_exact {YYUSE($u1);}
         ;
 
+within_opt:
+        | TOK_WITHIN[tk1] TOK_GROUP[tk2] '('[u1] sort_opt ')'[u2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            YYUSE($u1); YYUSE($u2);
+        }
+        ;
+
 expr_common:
-          func
+          func within_opt
         | operator expr {
             sqli_store_data(ctx, &$operator);
         }
