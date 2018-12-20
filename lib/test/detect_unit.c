@@ -151,6 +151,7 @@ Tsqli_whitespace(void)
     s_sqli_attacks(
         {CSTR_LEN("1\vor\v1")},
         {CSTR_LEN("1\u00A0or\u00A01")},
+        {CSTR_LEN("1\000or\0001")},
     );
 }
 
