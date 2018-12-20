@@ -649,12 +649,25 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
         }
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '='[u1] expr {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+            YYUSE($u1);
+        }
         | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
             sqli_store_data(ctx, &$len);
             YYUSE($u2);
+        }
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] '='[u3] expr {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$len);
+            YYUSE($u2);
+            YYUSE($u3);
         }
         ;
 
