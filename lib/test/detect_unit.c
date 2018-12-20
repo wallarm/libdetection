@@ -452,6 +452,12 @@ Tsqli_if_else(void)
     );
 }
 
+static void
+Tsqli_while(void)
+{
+    s_sqli_attacks({CSTR_LEN("WHILE 1=1 SELECT 1")});
+}
+
 int
 main(void)
 {
@@ -507,6 +513,7 @@ main(void)
         {"nl_in_str", Tsqli_nl_in_str},
         {"buf", Tsqli_buf},
         {"if_else", Tsqli_if_else},
+        {"while", Tsqli_while},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
