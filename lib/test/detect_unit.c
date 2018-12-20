@@ -330,6 +330,12 @@ Tsqli_goto(void)
     s_sqli_attacks({CSTR_LEN("1; GOTO label; SELECT 1")});
 }
 
+static void
+Tsqli_call(void)
+{
+    s_sqli_attacks({CSTR_LEN("call func()")});
+}
+
 int
 main(void)
 {
@@ -374,6 +380,7 @@ main(void)
         {"procedure_analyse", Tsqli_procedure_analyse},
         {"set", Tsqli_set},
         {"goto", Tsqli_goto},
+        {"call", Tsqli_call},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
