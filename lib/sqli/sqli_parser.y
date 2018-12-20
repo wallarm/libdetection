@@ -69,6 +69,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CALL
 %token <data> TOK_CURSOR
 %token <data> TOK_PATH
+%token <data> TOK_VALUES
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -144,6 +145,7 @@ sql_no_parens:
         | set
         | _goto
         | call
+        | insert
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -834,8 +836,22 @@ call: TOK_CALL[tk] func {
         }
         ;
 
-command:  TOK_INSERT
-        | TOK_ATTACH
+insert:   TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact execute {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact '('[u1] name_list ')'[u2] TOK_VALUES[tk3] '('[u3] func_args_list ')'[u4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            YYUSE($u2);
+            sqli_store_data(ctx, &$tk3);
+            YYUSE($u3);
+            YYUSE($u4);
+        }
+        ;
+
+command:  TOK_ATTACH
         ;
 
 close_multiple_parens: ')'[u1] {YYUSE($u1);}
