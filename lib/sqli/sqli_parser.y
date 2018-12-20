@@ -346,6 +346,7 @@ operator: TOK_OR
         | TOK_EXIST
         | '*'
         | '='
+        | '.'
         ;
 
 select_distinct_opt:
