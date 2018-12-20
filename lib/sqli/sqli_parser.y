@@ -66,6 +66,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_LOAD TOK_DATA2 TOK_XML TOK_CONCURRENT TOK_LOCAL TOK_INFILE
 %token <data> TOK_PROCEDURE
 %token <data> TOK_GOTO
+%token <data> TOK_CALL
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -140,6 +141,7 @@ sql_no_parens:
         | load
         | set
         | _goto
+        | call
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -807,6 +809,11 @@ set:      TOK_SET[tk] expr {
 _goto:    TOK_GOTO[tk] data_name[label] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$label);
+        }
+        ;
+
+call: TOK_CALL[tk] func {
+            sqli_store_data(ctx, &$tk);
         }
         ;
 
