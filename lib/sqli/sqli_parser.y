@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_TABLE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
+%token <data> TOK_VALUES
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -130,6 +131,7 @@ sql_no_parens:
         | drop
         | use
         | _delete
+        | insert
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -733,8 +735,22 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
         }
         ;
 
-command:  TOK_INSERT
-        | TOK_ATTACH
+insert:   TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact execute {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact '('[u1] name_list ')'[u2] TOK_VALUES[tk3] '('[u3] func_args_list ')'[u4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            YYUSE($u2);
+            sqli_store_data(ctx, &$tk3);
+            YYUSE($u3);
+            YYUSE($u4);
+        }
+        ;
+
+command:  TOK_ATTACH
         ;
 
 close_multiple_parens: ')'[u1] {YYUSE($u1);}
