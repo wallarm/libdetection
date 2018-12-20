@@ -346,6 +346,15 @@ Tsqli_for_xml(void)
     s_sqli_attacks({CSTR_LEN("SELECT 1 FOR XML PATH('')")});
 }
 
+static void
+Tsqli_insert(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("INSERT INTO table_name EXEC xp_cmdshell 'dir'")},
+        {CSTR_LEN("INSERT INTO table_name (col) VALUES (1)")},
+    );
+}
+
 int
 main(void)
 {
@@ -392,6 +401,7 @@ main(void)
         {"goto", Tsqli_goto},
         {"call", Tsqli_call},
         {"for_xml", Tsqli_for_xml},
+        {"insert", Tsqli_insert},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
