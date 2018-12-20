@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_TABLE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
+%token <data> TOK_CALL
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -130,6 +131,7 @@ sql_no_parens:
         | drop
         | use
         | _delete
+        | call
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -730,6 +732,11 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
         | TOK_DELETE[tk1] top_opt TOK_FROM[key] from_list where_opt {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$key);
+        }
+        ;
+
+call: TOK_CALL[tk] func {
+            sqli_store_data(ctx, &$tk);
         }
         ;
 
