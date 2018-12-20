@@ -73,6 +73,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_OPEN
 %token <data> TOK_OVER
 %token <data> TOK_WITHIN
+%token <data> TOK_ALTER TOK_RECOVERY TOK_SIMPLE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -150,6 +151,7 @@ sql_no_parens:
         | call
         | insert
         | open
+        | alter
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -873,6 +875,16 @@ insert:   TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact execute {
 open: TOK_OPEN[tk] data_name[name] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$name);
+        }
+        ;
+
+alter: TOK_ALTER[tk1] TOK_DATABASE[tk2] data_name[name] TOK_SET[tk3] TOK_RECOVERY[tk4] TOK_SIMPLE[tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$name);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
         }
         ;
 
