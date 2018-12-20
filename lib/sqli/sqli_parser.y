@@ -576,6 +576,7 @@ select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
             sqli_store_data(ctx, &$tk);
         }
         | select union_c all_distinct_opt select_parens
+        | select union_c all_distinct_opt execute
         ;
 
 begin_end: TOK_BEGIN[tk1] multiple_sqls TOK_END[tk2] {
@@ -763,6 +764,7 @@ multiple_sqls: sql_parens semicolons_opt
 select_after_where_optunion:
         select_after_where
         | select_after_where union_c all_distinct_opt select_parens
+        | select_after_where union_c all_distinct_opt execute
         ;
 
 after_exp_cont_op_noexpr:
