@@ -74,7 +74,7 @@ Tsqli_inj_in_table_name(void)
 }
 
 static void
-Tsqli_union_distinct(void)
+Tsqli_union(void)
 {
     struct detect *detect;
     uint32_t attack_types;
@@ -83,6 +83,11 @@ Tsqli_union_distinct(void)
     CU_ASSERT_EQUAL(detect_start(detect), 0);
     CU_ASSERT_EQUAL(
         detect_add_data(detect, STR_LEN_ARGS("1' union distinct select 1"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect, STR_LEN_ARGS("1' union exec xp_cmdhshell 'ping127.0.0.1'"), true), 0);
     CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
     CU_ASSERT_EQUAL(detect_stop(detect), 0);
     CU_ASSERT_EQUAL(detect_close(detect), 0);
@@ -575,7 +580,7 @@ main(void)
         {"simplest", Tsqli_simplest},
         {"rce", Tsqli_rce},
         {"inj_in_table_name", Tsqli_inj_in_table_name},
-        {"union_distinct", Tsqli_union_distinct},
+        {"union", Tsqli_union},
         {"operators", Tsqli_operators},
         {"begin_end", Tsqli_begin_end},
         {"waitfor", Tsqli_waitfor},
