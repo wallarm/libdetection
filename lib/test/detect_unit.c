@@ -340,6 +340,12 @@ Tsqli_call(void)
     s_sqli_attacks({CSTR_LEN("call func()")});
 }
 
+static void
+Tsqli_for_xml(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT 1 FOR XML PATH('')")});
+}
+
 int
 main(void)
 {
@@ -385,6 +391,7 @@ main(void)
         {"set", Tsqli_set},
         {"goto", Tsqli_goto},
         {"call", Tsqli_call},
+        {"for_xml", Tsqli_for_xml},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
