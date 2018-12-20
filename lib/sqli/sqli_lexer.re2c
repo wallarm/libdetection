@@ -216,7 +216,7 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
-      <VAR> [0-9a-zA-Z_@$] {
+      <VAR> [0-9a-zA-Z_@$]|[\xC0-\xDF][\x80-\xBF] {
           if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
               DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
               goto sqli_VAR;
@@ -707,7 +707,7 @@ sqli_get_token(
           arg->data.tok = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1];
           RET(ctx, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
       }
-      <INITIAL> [a-zA-Z_@$] => VAR {
+      <INITIAL> [a-zA-Z_@$]|[\xC0-\xDF][\x80-\xBF] => VAR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_VAR;
