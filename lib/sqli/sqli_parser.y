@@ -70,6 +70,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CURSOR
 %token <data> TOK_PATH
 %token <data> TOK_VALUES
+%token <data> TOK_OPEN
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -146,6 +147,7 @@ sql_no_parens:
         | _goto
         | call
         | insert
+        | open
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -848,6 +850,12 @@ insert:   TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact execute {
             sqli_store_data(ctx, &$tk3);
             YYUSE($u3);
             YYUSE($u4);
+        }
+        ;
+
+open: TOK_OPEN[tk] data_name[name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$name);
         }
         ;
 
