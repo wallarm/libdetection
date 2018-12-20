@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_TABLE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
+%token <data> TOK_CURSOR
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -655,6 +656,12 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             YYUSE($u1);
             sqli_store_data(ctx, &$len);
             YYUSE($u2);
+        }
+        | TOK_DECLARE[tk1] data_name[name] TOK_CURSOR[tk2] TOK_FOR[tk3] select_parens {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$name);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
         }
         ;
 
