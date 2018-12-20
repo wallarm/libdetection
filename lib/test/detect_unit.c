@@ -92,9 +92,12 @@ Tsqli_inj_in_table_name(void)
 }
 
 static void
-Tsqli_union_distinct(void)
+Tsqli_union(void)
 {
-    s_sqli_attacks({CSTR_LEN("1' union distinct select 1")});
+    s_sqli_attacks(
+        {CSTR_LEN("1' union distinct select 1")},
+        {CSTR_LEN("1' union exec xp_cmdhshell 'ping127.0.0.1'")},
+    );
 }
 
 static void
@@ -411,7 +414,7 @@ main(void)
         {"simplest", Tsqli_simplest},
         {"rce", Tsqli_rce},
         {"inj_in_table_name", Tsqli_inj_in_table_name},
-        {"union_distinct", Tsqli_union_distinct},
+        {"union", Tsqli_union},
         {"operators", Tsqli_operators},
         {"begin_end", Tsqli_begin_end},
         {"waitfor", Tsqli_waitfor},
