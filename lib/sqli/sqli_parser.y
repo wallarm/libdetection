@@ -72,6 +72,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_VALUES
 %token <data> TOK_OPEN
 %token <data> TOK_OVER
+%token <data> TOK_WITHIN
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -209,8 +210,16 @@ over_opt:
         }
         ;
 
+within_opt:
+        | TOK_WITHIN[tk1] TOK_GROUP[tk2] '('[u1] sort_opt ')'[u2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            YYUSE($u1); YYUSE($u2);
+        }
+        ;
+
 expr_common:
-          func over_opt
+          func over_opt within_opt
         | operator expr {
             sqli_store_data(ctx, &$operator);
         }
