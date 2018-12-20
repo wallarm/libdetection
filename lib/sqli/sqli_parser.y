@@ -71,6 +71,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_PATH
 %token <data> TOK_VALUES
 %token <data> TOK_OPEN
+%token <data> TOK_OVER
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -201,8 +202,15 @@ name_list: colref_exact
         | name_list ','[u1] colref_exact {YYUSE($u1);}
         ;
 
+over_opt:
+        | TOK_OVER[tk] '('[u1] sort_opt ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1); YYUSE($u2);
+        }
+        ;
+
 expr_common:
-          func
+          func over_opt
         | operator expr {
             sqli_store_data(ctx, &$operator);
         }
