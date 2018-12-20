@@ -379,6 +379,12 @@ Tsqli_inner_select(void)
     s_sqli_attacks({CSTR_LEN("1 union select 2 where 1=1), 3 where 1=1")});
 }
 
+static void
+Tsqli_alter_database(void)
+{
+    s_sqli_attacks({CSTR_LEN("ALTER DATABASE pubs SET RECOVERY SIMPLE")});
+}
+
 int
 main(void)
 {
@@ -429,6 +435,7 @@ main(void)
         {"var", Tsqli_var},
         {"open", Tsqli_open},
         {"inner_select", Tsqli_inner_select},
+        {"alter_database", Tsqli_alter_database},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
