@@ -344,6 +344,7 @@ operator: TOK_OR
         | TOK_AGAINST
         | TOK_COLLATE
         | TOK_EXIST
+        | TOK_AS
         | '*'
         | '='
         | '.'
