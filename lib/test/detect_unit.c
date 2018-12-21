@@ -487,7 +487,7 @@ Tsqli_drop(void)
 }
 
 static void
-Tsqli_select_alias(void)
+Tsqli_select(void)
 {
     struct detect *detect;
     uint32_t attack_types;
@@ -496,6 +496,14 @@ Tsqli_select_alias(void)
     CU_ASSERT_EQUAL(detect_start(detect), 0);
     CU_ASSERT_EQUAL(
         detect_add_data(detect, STR_LEN_ARGS("(select 1) as t"), true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect,
+                        STR_LEN_ARGS("SELECT listagg(col,', ') WITHIN GROUP "
+                                     "(ORDER BY col) from table_name"),
+                        true), 0);
     CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
     CU_ASSERT_EQUAL(detect_stop(detect), 0);
     CU_ASSERT_EQUAL(detect_close(detect), 0);
@@ -596,7 +604,7 @@ main(void)
         {"declare", Tsqli_declare},
         {"execute", Tsqli_execute},
         {"nul_in_str", Tsqli_nul_in_str},
-        {"select_alias", Tsqli_select_alias},
+        {"select", Tsqli_select},
         {"drop", Tsqli_drop},
         {"where", Tsqli_where},
         {"string", Tsqli_string},
