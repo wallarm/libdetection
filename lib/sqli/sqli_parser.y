@@ -18,7 +18,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 }
 %define lr.type lalr
 
-%type <data> data_name
+%type <data> data data_name
 %type <data> operator command
 %type <data> join_type
 %type <data> select_extra_tk
@@ -102,7 +102,28 @@ start_string: TOK_START_STRING {
         } data_cont
         ;
 
-data_name:  TOK_DATA
+data:     TOK_DATA
+        | data TOK_DATA {
+            if ($1.flags == SQLI_VALUE_NEEDFREE) {
+                $$.value.str = realloc($1.value.str, $1.value.len +
+                                       $2.value.len);
+                if ($$.value.str) {
+                    $1.flags = 0;
+                }
+            } else {
+                $$.value.str = malloc($1.value.len + $2.value.len);
+                memcpy($$.value.str, $1.value.str, $1.value.len);
+                $$.flags = SQLI_VALUE_NEEDFREE;
+            }
+            memcpy($$.value.str + $1.value.len, $2.value.str, $2.value.len);
+            $$.value.len = $1.value.len + $2.value.len;
+
+            sqli_token_data_destructor(&$1);
+            sqli_token_data_destructor(&$2);
+        }
+        ;
+
+data_name:  data
         |   TOK_NAME
         |   TOK_DATA2
         /* Tokens-as-identifiers here */
