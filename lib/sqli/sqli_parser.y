@@ -337,6 +337,7 @@ func_name:  colref_exact
         | TOK_LEFT
         | TOK_DATABASE
         | TOK_IF
+        | TOK_REPLACE
         ;
 
 expr_list:
