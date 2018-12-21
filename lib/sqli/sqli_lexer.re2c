@@ -159,7 +159,7 @@ sqli_get_token(
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
       }
-      <INSTRING,SQUOTE,DQUOTE,BQUOTE> . {
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE> .|[\n] {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
