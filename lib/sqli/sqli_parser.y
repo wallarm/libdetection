@@ -74,6 +74,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_OVER
 %token <data> TOK_WITHIN
 %token <data> TOK_ALTER TOK_RECOVERY TOK_SIMPLE
+%token <data> TOK_LOCK TOK_SHARE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -571,8 +572,17 @@ procedure_opt:
         | procedure
         ;
 
+lock_opt:
+        | TOK_LOCK[tk1] TOK_IN[tk2] TOK_SHARE[tk3] TOK_MODE[tk4] {
+              sqli_store_data(ctx, &$tk1);
+              sqli_store_data(ctx, &$tk2);
+              sqli_store_data(ctx, &$tk3);
+              sqli_store_data(ctx, &$tk4);
+        }
+        ;
+
 select_after_where:
-        group_opt having_opt sort_opt select_extras_opt procedure_opt
+        group_opt having_opt sort_opt select_extras_opt procedure_opt lock_opt
         ;
 
 outfile_opt:
