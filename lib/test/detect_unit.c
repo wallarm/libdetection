@@ -245,7 +245,10 @@ Tsqli_declare(void)
 static void
 Tsqli_execute(void)
 {
-    s_sqli_attacks({CSTR_LEN("EXEC master.dbo.xp_cmdshell 'cmd'")});
+    s_sqli_attacks(
+        {CSTR_LEN("EXEC master.dbo.xp_cmdshell 'cmd'")},
+        {CSTR_LEN("EXEC (@s)")},
+    );
 }
 
 static void
