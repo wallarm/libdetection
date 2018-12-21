@@ -385,6 +385,12 @@ Tsqli_alter_database(void)
     s_sqli_attacks({CSTR_LEN("ALTER DATABASE pubs SET RECOVERY SIMPLE")});
 }
 
+static void
+Tsqli_backslash(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT \\1")});
+}
+
 int
 main(void)
 {
@@ -436,6 +442,7 @@ main(void)
         {"open", Tsqli_open},
         {"inner_select", Tsqli_inner_select},
         {"alter_database", Tsqli_alter_database},
+        {"backslash", Tsqli_backslash},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
