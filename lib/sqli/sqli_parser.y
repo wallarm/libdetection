@@ -127,6 +127,16 @@ data_name:  data
         |   TOK_NAME
         |   TOK_DATA2
         |   TOK_TABLE
+        | '['[u1] TOK_NAME[name] ']'[u2] {
+            YYUSE($u1);
+            $$ = $name;
+            YYUSE($u2);
+        }
+        | '['[u1] TOK_TABLE[name] ']'[u2] {
+            YYUSE($u1);
+            $$ = $name;
+            YYUSE($u2);
+        }
         /* Tokens-as-identifiers here */
         ;
 
