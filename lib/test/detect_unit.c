@@ -448,6 +448,13 @@ Tsqli_execute(void)
                         true), 0);
     CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
     CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    CU_ASSERT_EQUAL(detect_start(detect), 0);
+    CU_ASSERT_EQUAL(
+        detect_add_data(detect,
+                        STR_LEN_ARGS("EXEC (@s)"),
+                        true), 0);
+    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+    CU_ASSERT_EQUAL(detect_stop(detect), 0);
     CU_ASSERT_EQUAL(detect_close(detect), 0);
 }
 
