@@ -362,6 +362,12 @@ Tsqli_var(void)
     s_sqli_attacks({CSTR_LEN("SELECT привет#")});
 }
 
+static void
+Tsqli_open(void)
+{
+    s_sqli_attacks({CSTR_LEN("OPEN tablecursor")});
+}
+
 int
 main(void)
 {
@@ -410,6 +416,7 @@ main(void)
         {"for_xml", Tsqli_for_xml},
         {"insert", Tsqli_insert},
         {"var", Tsqli_var},
+        {"open", Tsqli_open},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
