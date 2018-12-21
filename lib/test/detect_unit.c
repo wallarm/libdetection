@@ -270,6 +270,8 @@ Tsqli_select(void)
     s_sqli_attacks(
         {CSTR_LEN("(select 1) as t")},
         {CSTR_LEN("SELECT lead(col, 0) OVER (ORDER BY col) FROM table_name")},
+        {CSTR_LEN("SELECT listagg(col,', ') WITHIN GROUP "
+                  "(ORDER BY col) from table_name")},
     );
 }
 
