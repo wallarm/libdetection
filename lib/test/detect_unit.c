@@ -265,9 +265,12 @@ Tsqli_drop(void)
 }
 
 static void
-Tsqli_select_alias(void)
+Tsqli_select(void)
 {
-    s_sqli_attacks({CSTR_LEN("(select 1) as t")});
+    s_sqli_attacks(
+        {CSTR_LEN("(select 1) as t")},
+        {CSTR_LEN("SELECT lead(col, 0) OVER (ORDER BY col) FROM table_name")},
+    );
 }
 
 static void
@@ -400,7 +403,7 @@ main(void)
         {"declare", Tsqli_declare},
         {"execute", Tsqli_execute},
         {"nul_in_str", Tsqli_nul_in_str},
-        {"select_alias", Tsqli_select_alias},
+        {"select", Tsqli_select},
         {"drop", Tsqli_drop},
         {"where", Tsqli_where},
         {"string", Tsqli_string},
