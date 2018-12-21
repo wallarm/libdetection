@@ -126,6 +126,7 @@ data:     TOK_DATA
 data_name:  data
         |   TOK_NAME
         |   TOK_DATA2
+        |   TOK_TABLE
         /* Tokens-as-identifiers here */
         ;
 
