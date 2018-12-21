@@ -677,6 +677,12 @@ execute:
         TOK_EXECUTE[tk] func_name param_list {
             sqli_store_data(ctx, &$tk);
         }
+        | TOK_EXECUTE[tk] '('[u1] data_name[name] ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$name);
+            YYUSE($u2);
+        }
         ;
 
 drop:     TOK_DROP[tk1] TOK_FUNCTION[tk2] func_name {
