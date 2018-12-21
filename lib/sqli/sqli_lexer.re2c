@@ -700,7 +700,7 @@ sqli_get_token(
           goto sqli_NUMBER;
       }
       <INITIAL> '0x' => HEXNUMBER {
-          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 2048);
           detect_buf_add_char(&ctx->lexer.buf, '0');
           detect_buf_add_char(&ctx->lexer.buf, 'x');
           goto sqli_HEXNUMBER;
