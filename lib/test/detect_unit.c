@@ -394,6 +394,12 @@ Tsqli_backslash(void)
     s_sqli_attacks({CSTR_LEN("SELECT \\1")});
 }
 
+static void
+Tsqli_nl_in_str(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT '\n'")});
+}
+
 int
 main(void)
 {
@@ -446,6 +452,7 @@ main(void)
         {"inner_select", Tsqli_inner_select},
         {"alter_database", Tsqli_alter_database},
         {"backslash", Tsqli_backslash},
+        {"nl_in_str", Tsqli_nl_in_str},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
