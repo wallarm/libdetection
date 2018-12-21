@@ -212,6 +212,10 @@ colref_exact:
             YYUSE($u1);
             YYUSE($u2);
         }
+        | '{'[u1] colref_exact '}'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
         ;
 
 colref_asterisk:
