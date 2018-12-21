@@ -271,6 +271,16 @@ sqli_get_token(
               RET(ctx, TOK_ERROR);
           }
       }
+      <EXP> [\.] => INITIAL {
+          detect_buf_deinit(&ctx->lexer.buf);
+
+          arg->data.value.str = (char *)&selfsyms['.'];
+          arg->data.value.len = 1;
+          arg->data.flags = SQLI_KEY_INSTR;
+          arg->data.tok = '.';
+          YYSETSTATE(-1);
+          RET(ctx, '.');
+      }
       <NUMBER_OR_VAR,NUMBER,DECIMAL,EXP_OR_VAR,EXP> [^] => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
