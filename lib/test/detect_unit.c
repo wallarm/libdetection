@@ -4,6 +4,33 @@
 
 #define STR_LEN_ARGS(str) str, sizeof(str) - 1
 
+#define s_sqli_attacks(...)                                    \
+    s_type_attacks(                                            \
+        "sqli",                                                \
+        (const struct detect_str []){__VA_ARGS__},             \
+        sizeof((const struct detect_str []){__VA_ARGS__})      \
+            / sizeof(const struct detect_str))
+
+static void
+s_type_attacks(
+    const char *typename,
+    const struct detect_str *tests, size_t ntests)
+{
+    struct detect *detect;
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open(typename));
+    for (size_t i = 0; i != ntests; i++) {
+        uint32_t attack_types;
+
+        CU_ASSERT_EQUAL(detect_start(detect), 0);
+        CU_ASSERT_EQUAL(
+            detect_add_data(detect, tests[i].str, tests[i].len, true), 0);
+        CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+        CU_ASSERT_EQUAL(detect_stop(detect), 0);
+    }
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+}
+
 static void
 Tsimplest(void)
 {
@@ -61,507 +88,202 @@ Tsqli_rce(void)
 static void
 Tsqli_inj_in_table_name(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1' where 1=1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1' where 1=1")});
 }
 
 static void
 Tsqli_union_distinct(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1' union distinct select 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1' union distinct select 1")});
 }
 
 static void
 Tsqli_operators(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1' RLIKE '.*'"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1 MOD 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1 XOR 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1' REGEXP '.*'"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1' + BINARY '1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1' INTO OUTFILE '1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1 AND 1 SOUNDS LIKE 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1 MATCH(col) AGAINST('text')"),
-                        true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("1' RLIKE '.*'")},
+        {CSTR_LEN("1 MOD 1")},
+        {CSTR_LEN("1 XOR 1")},
+        {CSTR_LEN("1' REGEXP '.*'")},
+        {CSTR_LEN("1' + BINARY '1")},
+        {CSTR_LEN("1' INTO OUTFILE '1")},
+        {CSTR_LEN("1 AND 1 SOUNDS LIKE 1")},
+        {CSTR_LEN("1 MATCH(col) AGAINST('text')")},
+    );
 }
 
 static void
 Tsqli_begin_end(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1'; BEGIN UPDATE table_name SET column1 = value1 END"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1'; BEGIN UPDATE table_name SET column1 = value1 END")});
 }
 
 static void
 Tsqli_waitfor(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1'; WAITFOR DELAY '02:00'"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1'; WAITFOR TIME '02:00'"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("1'; WAITFOR DELAY '02:00'")},
+        {CSTR_LEN("1'; WAITFOR TIME '02:00'")},
+    );
 }
 
 static void
 Tsqli_top(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("SELECT TOP 5 * FROM table_name"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("SELECT TOP 5 * FROM table_name")});
 }
 
 static void
 Tsqli_identifier_quote(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(detect_add_data(detect,
-                                    STR_LEN_ARGS("SELECT * FROM `select`"),
-                                    true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("SELECT * FROM `select`")});
 }
 
 static void
 Tsqli_whitespace(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1\vor\v1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1\u00A0or\u00A01"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("1\vor\v1")},
+        {CSTR_LEN("1\u00A0or\u00A01")},
+    );
 }
 
 static void
 Tsqli_null(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1-\\N union select 1"), true),0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1-\\N union select 1")});
 }
 
 static void
 Tsqli_left_func(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1 AND left(a, 2) = 'ab'"), true),
-        0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1 AND left(a, 2) = 'ab'")});
 }
 
 static void
 Tsqli_func(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1; DBMS_LOCK.SLEEP()"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1; DBMS_LOCK.SLEEP()")});
 }
 
 static void
 Tsqli_var_start_with_dollar(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1 AND $func(a, 2) = 'ab'"), true),
-        0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1 AND $func(a, 2) = 'ab'")});
 }
 
 static void
 Tsqli_create_func(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect,
-                        STR_LEN_ARGS("1; CREATE OR REPLACE FUNCTION SLEEP(int) \
-                                      RETURNS int AS '/lib/libc.so.6','sleep'  \
-                                      language 'C' STRICT"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1; CREATE OR REPLACE FUNCTION SLEEP(int) "
+                             "RETURNS int AS '/lib/libc.so.6','sleep' "
+                             "language 'C' STRICT")});
 }
 
 static void
 Tsqli_bit_num(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("0b01UNION SELECT 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("B01UNION ALL SELECT 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("0b'01'UNION SELECT 1"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("B'01' UNION ALL SELECT 1"), true), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("0b01UNION SELECT 1")},
+        {CSTR_LEN("B01UNION ALL SELECT 1")},
+        {CSTR_LEN("0b'01'UNION SELECT 1")},
+        {CSTR_LEN("B'01' UNION ALL SELECT 1")},
+    );
 }
 
 static void
 Tsqli_join_wo_join_qual(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-      detect_add_data(detect,
-                      STR_LEN_ARGS("SELECT * FROM (SELECT * FROM (SELECT 1) \
-                                    as t JOIN (SELECT 2)b)a"), true), 0);
-  CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-  CU_ASSERT_EQUAL(detect_stop(detect), 0);
-  CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("SELECT * FROM (SELECT * FROM (SELECT 1) "
+                             "as t JOIN (SELECT 2)b)a")});
 }
 
 static void
 Tsqli_empty_schema(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("SELECT 1 FROM master..sysdatabases"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("SELECT 1 FROM master..sysdatabases")});
 }
 
 static void
 Tsqli_asc_desc(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("SELECT 1 ORDER BY 1 ASC"), true),
-        0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("SELECT 1 ORDER BY 1 DESC"), true),
-        0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("SELECT 1 ORDER BY 1 ASC")},
+        {CSTR_LEN("SELECT 1 ORDER BY 1 DESC")},
+    );
 }
 
 static void
 Tsqli_shutdown(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1; SHUTDOWN"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1; SHUTDOWN")});
 }
 
 static void
 Tsqli_into_outfile(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect,
-                        STR_LEN_ARGS("SELECT 1 FROM table_name INTO OUTFILE 1"),
-                        true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("SELECT 1 FROM table_name INTO OUTFILE 1")});
 }
 
 static void
 Tsqli_declare(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-          detect_add_data(detect, STR_LEN_ARGS("1; DECLARE name varchar(42)"),
-                          true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1; DECLARE name varchar(42)")});
 }
 
 static void
 Tsqli_execute(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect,
-                        STR_LEN_ARGS("EXEC master.dbo.xp_cmdshell 'cmd'"),
-                        true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("EXEC master.dbo.xp_cmdshell 'cmd'")});
 }
 
 static void
 Tsqli_nul_in_str(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("1\0' ^ '"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("1\0' ^ '")});
 }
 
 static void
 Tsqli_drop(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("DROP TABLE table_name"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("DROP FUNCTION func_name"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("DROP TABLE table_name")},
+        {CSTR_LEN("DROP FUNCTION func_name")},
+    );
 }
 
 static void
 Tsqli_select_alias(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("(select 1) as t"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("(select 1) as t")});
 }
 
 static void
 Tsqli_where(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("SELECT * FROM (table_name)"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("SELECT * FROM (table_name)")});
 }
 
 static void
 Tsqli_string(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS(
-            "SELECT _latin1 'str' COLLATE latin1_german2_ci a, n'str' b, "
-            "x'str' c, _utf8'str' d"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("SELECT _latin1 'str' COLLATE latin1_german2_ci a, n'str' b, "
+                  "x'str' c, _utf8'str' d")});
 }
 
 static void
 Tsqli_use(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("USE database"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks({CSTR_LEN("USE database")});
 }
 
 static void
 Tsqli_delete(void)
 {
-    struct detect *detect;
-    uint32_t attack_types;
-
-    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
-    CU_ASSERT_EQUAL(detect_start(detect), 0);
-    CU_ASSERT_EQUAL(
-        detect_add_data(detect, STR_LEN_ARGS("DELETE LOW_PRIORITY \
-            FROM table_name WHERE 1=1 ORDER BY col ASC LIMIT 42"), true), 0);
-    CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
-    CU_ASSERT_EQUAL(detect_stop(detect), 0);
-    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    s_sqli_attacks(
+        {CSTR_LEN("DELETE LOW_PRIORITY "
+                  "FROM table_name WHERE 1=1 ORDER BY col ASC LIMIT 42")});
 }
 
 int
