@@ -26,17 +26,18 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %type <data> func_args_modifier_tk
 %type <data> post_expr_tk
 %type <data> delete_modifier
+%type <data> load_modifier data_xml
 
 %token TOK_START_DATA
 %token TOK_START_STRING
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '='
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':'
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
-              TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST
-%token <data> TOK_COLLATE
+              TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST TOK_EXIST
+%token <data> TOK_COLLATE TOK_UESCAPE
 %token <data> TOK_FOR
 %token <data> TOK_FROM TOK_INTO TOK_WHERE
 %token <data> TOK_AS TOK_ON TOK_USING
@@ -58,9 +59,16 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CREATE TOK_REPLACE TOK_FUNCTION TOK_RETURNS TOK_LANGUAGE TOK_STRICT
 %token <data> TOK_SHUTDOWN
 %token <data> TOK_DECLARE
-%token <data> TOK_TABLE
+%token <data> TOK_TABLE TOK_DATABASE
 %token <data> TOK_USE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
+%token <data> TOK_PRINT
+%token <data> TOK_LOAD TOK_DATA2 TOK_XML TOK_CONCURRENT TOK_LOCAL TOK_INFILE
+%token <data> TOK_PROCEDURE
+%token <data> TOK_GOTO
+%token <data> TOK_CALL
+%token <data> TOK_CURSOR
+%token <data> TOK_PATH
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -99,6 +107,7 @@ start_string: TOK_START_STRING {
 
 data_name:  TOK_DATA
         |   TOK_NAME
+        |   TOK_DATA2
         /* Tokens-as-identifiers here */
         ;
 
@@ -130,6 +139,11 @@ sql_no_parens:
         | drop
         | use
         | _delete
+        | print
+        | load
+        | set
+        | _goto
+        | call
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -253,6 +267,7 @@ expr:   expr_common
 
 func_name:  colref_exact
         | TOK_LEFT
+        | TOK_DATABASE
         ;
 
 expr_list:
@@ -343,8 +358,13 @@ operator: TOK_OR
         | TOK_MATCH
         | TOK_AGAINST
         | TOK_COLLATE
+        | TOK_EXIST
+        | TOK_AS
+        | TOK_UESCAPE
         | '*'
         | '='
+        | '.'
+        | ':'
         ;
 
 select_distinct_opt:
@@ -493,6 +513,15 @@ select_extra_tk:
             $$.value = (struct detect_str){CSTR_LEN("FOR_UPDATE")};
             YYUSE($u1);
         }
+        | TOK_FOR[tk] TOK_XML[u1] TOK_PATH[u2] '('[u3] data_name[elem] ')'[u4] {
+            $$ = $tk;
+            $$.value = (struct detect_str){CSTR_LEN("TOK_FOR TOK_XML TOK_PATH")};
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+            sqli_store_data(ctx, &$elem);
+            YYUSE($u4);
+        }
         ;
 
 select_extra:
@@ -509,8 +538,18 @@ select_extras_opt:
         | select_extras
         ;
 
+procedure:
+          TOK_PROCEDURE[tk1] func {
+            sqli_store_data(ctx, &$tk1);
+        }
+        ;
+
+procedure_opt:
+        | procedure
+        ;
+
 select_after_where:
-        group_opt having_opt sort_opt select_extras_opt
+        group_opt having_opt sort_opt select_extras_opt procedure_opt
         ;
 
 outfile_opt:
@@ -656,6 +695,12 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$len);
             YYUSE($u2);
         }
+        | TOK_DECLARE[tk1] data_name[name] TOK_CURSOR[tk2] TOK_FOR[tk3] select_parens {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$name);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+        }
         ;
 
 param: data_name[value] {
@@ -684,6 +729,10 @@ drop:     TOK_DROP[tk1] TOK_FUNCTION[tk2] func_name {
             sqli_store_data(ctx, &$tk2);
         }
         | TOK_DROP[tk1] TOK_TABLE[tk2] func_name {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_DROP[tk1] TOK_DATABASE[tk2] func_name {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
@@ -730,6 +779,58 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
         | TOK_DELETE[tk1] top_opt TOK_FROM[key] from_list where_opt {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$key);
+        }
+        ;
+
+print:    TOK_PRINT[tk] expr {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+load_modifier:
+          TOK_LOW_PRIORITY
+        | TOK_CONCURRENT
+        ;
+
+load_modifier_opt:
+        | load_modifier[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+local_opt:
+        | TOK_LOCAL[tk] {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+data_xml:
+          TOK_DATA2
+        | TOK_XML
+        ;
+
+load:
+        TOK_LOAD[tk1] data_xml[tk2] load_modifier_opt local_opt TOK_INFILE[tk3] data_name[file_name] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$file_name);
+        }
+        ;
+
+set:      TOK_SET[tk] expr {
+            sqli_store_data(ctx, &$tk);
+        }
+        ;
+
+_goto:    TOK_GOTO[tk] data_name[label] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$label);
+        }
+        ;
+
+call: TOK_CALL[tk] func {
+            sqli_store_data(ctx, &$tk);
         }
         ;
 
