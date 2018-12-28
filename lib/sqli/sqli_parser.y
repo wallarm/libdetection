@@ -69,6 +69,12 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_CALL
 %token <data> TOK_CURSOR
 %token <data> TOK_PATH
+%token <data> TOK_VALUES
+%token <data> TOK_OPEN
+%token <data> TOK_OVER
+%token <data> TOK_WITHIN
+%token <data> TOK_ALTER TOK_RECOVERY TOK_SIMPLE
+%token <data> TOK_LOCK TOK_SHARE
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -144,6 +150,9 @@ sql_no_parens:
         | set
         | _goto
         | call
+        | insert
+        | open
+        | alter
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -197,8 +206,23 @@ name_list: colref_exact
         | name_list ','[u1] colref_exact {YYUSE($u1);}
         ;
 
+over_opt:
+        | TOK_OVER[tk] '('[u1] sort_opt ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1); YYUSE($u2);
+        }
+        ;
+
+within_opt:
+        | TOK_WITHIN[tk1] TOK_GROUP[tk2] '('[u1] sort_opt ')'[u2] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            YYUSE($u1); YYUSE($u2);
+        }
+        ;
+
 expr_common:
-          func
+          func over_opt within_opt
         | operator expr {
             sqli_store_data(ctx, &$operator);
         }
@@ -548,8 +572,17 @@ procedure_opt:
         | procedure
         ;
 
+lock_opt:
+        | TOK_LOCK[tk1] TOK_IN[tk2] TOK_SHARE[tk3] TOK_MODE[tk4] {
+              sqli_store_data(ctx, &$tk1);
+              sqli_store_data(ctx, &$tk2);
+              sqli_store_data(ctx, &$tk3);
+              sqli_store_data(ctx, &$tk4);
+        }
+        ;
+
 select_after_where:
-        group_opt having_opt sort_opt select_extras_opt procedure_opt
+        group_opt having_opt sort_opt select_extras_opt procedure_opt lock_opt
         ;
 
 outfile_opt:
@@ -615,6 +648,7 @@ select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
             sqli_store_data(ctx, &$tk);
         }
         | select union_c all_distinct_opt select_parens
+        | select union_c all_distinct_opt execute
         ;
 
 begin_end: TOK_BEGIN[tk1] multiple_sqls TOK_END[tk2] {
@@ -688,6 +722,11 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
         }
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '='[u1] expr {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+            YYUSE($u1);
+        }
         | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
@@ -700,6 +739,14 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$name);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
+        }
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] '='[u3] expr {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$type);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$len);
+            YYUSE($u2);
+            YYUSE($u3);
         }
         ;
 
@@ -721,6 +768,12 @@ param_list: param
 execute:
         TOK_EXECUTE[tk] func_name param_list {
             sqli_store_data(ctx, &$tk);
+        }
+        | TOK_EXECUTE[tk] '('[u1] data_name[name] ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            sqli_store_data(ctx, &$name);
+            YYUSE($u2);
         }
         ;
 
@@ -834,8 +887,38 @@ call: TOK_CALL[tk] func {
         }
         ;
 
-command:  TOK_INSERT
-        | TOK_ATTACH
+insert:   TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact execute {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        | TOK_INSERT[tk1] TOK_INTO[tk2] colref_exact '('[u1] name_list ')'[u2] TOK_VALUES[tk3] '('[u3] func_args_list ')'[u4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            YYUSE($u2);
+            sqli_store_data(ctx, &$tk3);
+            YYUSE($u3);
+            YYUSE($u4);
+        }
+        ;
+
+open: TOK_OPEN[tk] data_name[name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$name);
+        }
+        ;
+
+alter: TOK_ALTER[tk1] TOK_DATABASE[tk2] data_name[name] TOK_SET[tk3] TOK_RECOVERY[tk4] TOK_SIMPLE[tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$name);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
+        ;
+
+command:  TOK_ATTACH
         ;
 
 close_multiple_parens: ')'[u1] {YYUSE($u1);}
@@ -864,6 +947,7 @@ multiple_sqls: sql_parens semicolons_opt
 select_after_where_optunion:
         select_after_where
         | select_after_where union_c all_distinct_opt select_parens
+        | select_after_where union_c all_distinct_opt execute
         ;
 
 after_exp_cont_op_noexpr:
@@ -878,6 +962,9 @@ after_exp_cont_op:
 after_exp_cont:
         close_multiple_parens_opt semicolons multiple_sqls
         | close_multiple_parens after_exp_cont_op after_exp_cont
+        | close_multiple_parens ','[u1] select_list from_opt where_opt after_exp_cont {
+            YYUSE($u1);
+        }
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
         ;
 

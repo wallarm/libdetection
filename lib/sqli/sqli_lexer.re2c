@@ -95,7 +95,7 @@ sqli_get_token(
       re2c:condprefix      = sqli_;
       re2c:condenumprefix  = sqli_;
 
-      whitespace = [ \t\v\b\r\n\f\xA0]|[\xC2][\xA0];
+      whitespace = [ \x01-\x1F\x7F\x80\x81\x88\x8D\x8F\x90\x98\x9D\xA0]|[\xC2][\xA0];
       self = [,\.()\[\];=];
       opchar = [~!^&|?%:+\-*/<>];
       opchar_nocomment = [~!^&|?%+<>=];
@@ -159,7 +159,7 @@ sqli_get_token(
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
       }
-      <INSTRING,SQUOTE,DQUOTE,BQUOTE> . {
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE> .|[\n] {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
@@ -216,7 +216,7 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
-      <VAR> [0-9a-zA-Z_@$] {
+      <VAR> [0-9a-zA-Z_@$#]|[\xC0-\xDF][\x80-\xBF] {
           if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
               DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
               goto sqli_VAR;
@@ -649,6 +649,33 @@ sqli_get_token(
       <INITIAL> 'PATH'/key_end {
           KEYNAME_SET_RET(ctx, arg, PATH, SQLI_KEY_INSTR);
       }
+      <INITIAL> 'VALUES'/key_end {
+          KEYNAME_SET_RET(ctx, arg, VALUES, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'OPEN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, OPEN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'OVER'/key_end {
+          KEYNAME_SET_RET(ctx, arg, OVER, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'WITHIN'/key_end {
+          KEYNAME_SET_RET(ctx, arg, WITHIN, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'ALTER'/key_end {
+          KEYNAME_SET_RET(ctx, arg, ALTER, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'RECOVERY'/key_end {
+          KEYNAME_SET_RET(ctx, arg, RECOVERY, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'SIMPLE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, SIMPLE, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'LOCK'/key_end {
+          KEYNAME_SET_RET(ctx, arg, LOCK, SQLI_KEY_INSTR);
+      }
+      <INITIAL> 'SHARE'/key_end {
+          KEYNAME_SET_RET(ctx, arg, SHARE, SQLI_KEY_INSTR);
+      }
       <INITIAL> opchar => OPERATOR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
@@ -673,7 +700,7 @@ sqli_get_token(
           goto sqli_NUMBER;
       }
       <INITIAL> '0x' => HEXNUMBER {
-          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 2048);
           detect_buf_add_char(&ctx->lexer.buf, '0');
           detect_buf_add_char(&ctx->lexer.buf, 'x');
           goto sqli_HEXNUMBER;
@@ -692,7 +719,7 @@ sqli_get_token(
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_QBITVALUE;
       }
-      <INITIAL> [0-9] => NUMBER {
+      <INITIAL> '\\'|[0-9] => NUMBER {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_NUMBER;
@@ -704,12 +731,18 @@ sqli_get_token(
           arg->data.tok = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1];
           RET(ctx, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
       }
-      <INITIAL> [a-zA-Z_@$] => VAR {
+      <INITIAL> [a-zA-Z_@$]|[\xC0-\xDF][\x80-\xBF] => VAR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_VAR;
       }
-      <INITIAL> [\x00] { return (0); }
+      <INITIAL> [\x00] {
+          if (ctx->lexer.re2c.fin && ctx->lexer.re2c.tmp_data_in_use &&
+              ctx->lexer.re2c.pos >= ctx->lexer.re2c.tmp_data + ctx->lexer.re2c.tmp_data_siz) {
+              return (0);
+          }
+          goto yy0;
+      }
       <INITIAL> [^] {
           RET(ctx, TOK_ERROR);
       }
