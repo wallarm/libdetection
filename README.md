@@ -18,7 +18,7 @@ Does not require attacks samples to learn.
 To build, run
 
 ```sh
-$ ./configure
+$ ./config
 ```
 or, to build with optimizations
 
