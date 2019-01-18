@@ -91,7 +91,8 @@ perf_usage(const char *progname)
             "\t-P   List available parsers and exit\n"
             "\t-p   Parser to use (default is sqli)\n"
             "\t-d   Context number to disable\n"
-            "\t-e   Echo input strings\n"
+            "\t-e   Echo input strings if attack is detected\n"
+            "\t-f   Echo input strings if attack is not detected\n"
             "\t     (verbose=0: attacks only, verbose>0: all)\n"
             "\t-r   Show small report for each input string\n"
             "\t-n   Show total number of strings and attacks\n"
@@ -143,6 +144,7 @@ main(int argc, char **argv)
     bool print_nstr = false;
     bool report_attacks = false;
     bool echo = false;
+    bool echo_false = false;
     bool detect_initialized = false;
     uint64_t nstr, nattacks;
     int rc = EXIT_SUCCESS;
@@ -153,7 +155,7 @@ main(int argc, char **argv)
         progname = argv[0];
     progname = strdup(progname);
 
-    while ((argval = getopt(argc, argv, "Pp:ehnrvd:")) != EOF) {
+    while ((argval = getopt(argc, argv, "Pp:efhnrvd:")) != EOF) {
         switch (argval) {
         case 'P':
             action = PERF_ACTION_LIST_PARSERS;
@@ -179,6 +181,9 @@ main(int argc, char **argv)
         }
         case 'e':
             echo = true;
+            break;
+        case 'f':
+            echo_false = true;
             break;
         case 'n':
             print_nstr = true;
@@ -262,8 +267,9 @@ main(int argc, char **argv)
         has_attack = detect_has_attack(detect, &attack_types);
         if (report_attacks)
             s_report_attack(nstr, has_attack, attack_types);
-        if (echo && (has_attack || verbose > 0))
-            puts(buf);
+        if ((echo && (has_attack || verbose > 0)) ||
+            (echo_false && !has_attack))
+            printf("%.*s\n", (int)len, buf);
         if (has_attack ? verbose > 0 : verbose > 1)
             s_perf_dump_result(detect);
         detect_stop(detect);
