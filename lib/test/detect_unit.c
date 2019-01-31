@@ -440,6 +440,24 @@ Tsqli_buf(void)
                 "37572736F72")});
 }
 
+static void
+Tsqli_if_else(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("1'; IF (1=1) UPDATE table_name SET column1 = value1")},
+        {CSTR_LEN("1'; IF (1=1) UPDATE table_name "
+                  "SET column1 = value1 ELSE UPDATE "
+                  "table_name SET column1 = value1")},
+        {CSTR_LEN("SELECT IF(1=1,1, 0)")},
+    );
+}
+
+static void
+Tsqli_while(void)
+{
+    s_sqli_attacks({CSTR_LEN("WHILE 1=1 SELECT 1")});
+}
+
 int
 main(void)
 {
@@ -494,6 +512,8 @@ main(void)
         {"backslash", Tsqli_backslash},
         {"nl_in_str", Tsqli_nl_in_str},
         {"buf", Tsqli_buf},
+        {"if_else", Tsqli_if_else},
+        {"while", Tsqli_while},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {

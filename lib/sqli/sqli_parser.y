@@ -61,6 +61,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DECLARE
 %token <data> TOK_TABLE TOK_DATABASE
 %token <data> TOK_USE
+%token <data> TOK_WHILE
 %token <data> TOK_IGNORE TOK_LOW_PRIORITY TOK_QUICK
 %token <data> TOK_PRINT
 %token <data> TOK_LOAD TOK_DATA2 TOK_XML TOK_CONCURRENT TOK_LOCAL TOK_INFILE
@@ -75,6 +76,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_WITHIN
 %token <data> TOK_ALTER TOK_RECOVERY TOK_SIMPLE
 %token <data> TOK_LOCK TOK_SHARE
+%token <data> TOK_IF
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -153,6 +155,8 @@ sql_no_parens:
         | insert
         | open
         | alter
+        | if_else
+        | _while
         | command error {
             sqli_store_data(ctx, &$command);
             yyclearin;
@@ -241,6 +245,32 @@ expr_common:
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
+        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+        }
+        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+        }
+        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END[tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
+        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END [tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
         ;
 
 op_expr:  expr_common
@@ -280,18 +310,10 @@ post_exprs_opt:
         | post_exprs
         ;
 
-expr:   expr_common
-        | colref_exact
-        | colref_asterisk
-        | expr operator expr {
-            sqli_store_data(ctx, &$operator);
-        }
-        | expr post_exprs
-        ;
-
 func_name:  colref_exact
         | TOK_LEFT
         | TOK_DATABASE
+        | TOK_IF
         ;
 
 expr_list:
@@ -356,6 +378,15 @@ func:     func_name func_args {
         }
         ;
 
+expr:   expr_common
+        | colref_exact
+        | colref_asterisk
+        | expr operator expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | expr post_exprs
+        ;
+
 operator: TOK_OR
         | TOK_AND
         | TOK_IS
@@ -368,10 +399,6 @@ operator: TOK_OR
         | TOK_LIKE
         | TOK_RLIKE
         | TOK_OPERATOR
-        | TOK_CASE
-        | TOK_WHEN
-        | TOK_THEN
-        | TOK_ELSE
         | TOK_WAITFOR
         | TOK_DELAY
         | TOK_IN
@@ -405,11 +432,23 @@ select_list: select_arg
         | select_list ','[u1] select_arg {YYUSE($u1);}
         ;
 
+top_opt:
+        | TOK_TOP[tk] data_name[data] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
 select_args: select_distinct_opt
-        | select_distinct_opt '*'[key] {
+        | select_distinct_opt top_opt '*'[key] {
             sqli_store_data(ctx, &$key);
         }
-        | select_distinct_opt select_list
+        | select_distinct_opt top_opt select_list
         ;
 
 as_opt:
@@ -627,23 +666,11 @@ percent_opt:
                 sqli_store_data(ctx, &$tk);
         }
 
-top_opt:
-        | TOK_TOP[tk] data_name[data] percent_opt {
-            sqli_store_data(ctx, &$tk);
-            sqli_store_data(ctx, &$data);
-        }
-        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
-            YYUSE($u2);
-        }
-        ;
-
-select:   TOK_SELECT[tk] top_opt select_args into_opt from_opt
+select:   TOK_SELECT[tk] select_args into_opt from_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
-        | TOK_SELECT[tk] top_opt select_args from_opt into_opt
+        | TOK_SELECT[tk] select_args from_opt into_opt
           where_opt select_after_where {
             sqli_store_data(ctx, &$tk);
         }
@@ -915,6 +942,20 @@ alter: TOK_ALTER[tk1] TOK_DATABASE[tk2] data_name[name] TOK_SET[tk3] TOK_RECOVER
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
             sqli_store_data(ctx, &$tk5);
+        }
+        ;
+
+if_else:  TOK_IF[tk1] expr sql_parens {
+            sqli_store_data(ctx, &$tk1);
+        }
+        | TOK_IF[tk1] expr sql_parens TOK_ELSE[tk2] sql_parens {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+        }
+        ;
+
+_while:  TOK_WHILE[tk1] expr sql_parens {
+            sqli_store_data(ctx, &$tk1);
         }
         ;
 
