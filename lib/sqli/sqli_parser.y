@@ -982,7 +982,7 @@ semicolons_opt:
         ;
 
 multiple_sqls: sql_parens semicolons_opt
-        | sql_parens semicolons multiple_sqls
+        | sql_parens semicolons_opt multiple_sqls
         ;
 
 select_after_where_optunion:
@@ -1001,7 +1001,7 @@ after_exp_cont_op:
         ;
 
 after_exp_cont:
-        close_multiple_parens_opt semicolons multiple_sqls
+        close_multiple_parens_opt semicolons_opt multiple_sqls
         | close_multiple_parens after_exp_cont_op after_exp_cont
         | close_multiple_parens ','[u1] select_list from_opt where_opt after_exp_cont {
             YYUSE($u1);
