@@ -5,16 +5,23 @@
 #define STR_LEN_ARGS(str) str, sizeof(str) - 1
 
 #define s_sqli_attacks(...)                                    \
-    s_type_attacks(                                            \
+    s_type_checks(                                             \
         "sqli",                                                \
         (const struct detect_str []){__VA_ARGS__},             \
         sizeof((const struct detect_str []){__VA_ARGS__})      \
-            / sizeof(const struct detect_str))
+            / sizeof(const struct detect_str), true)
+
+#define s_sqli_not_attacks(...)                                \
+    s_type_checks(                                             \
+        "sqli",                                                \
+        (const struct detect_str []){__VA_ARGS__},             \
+        sizeof((const struct detect_str []){__VA_ARGS__})      \
+            / sizeof(const struct detect_str), false)
 
 static void
-s_type_attacks(
+s_type_checks(
     const char *typename,
-    const struct detect_str *tests, size_t ntests)
+    const struct detect_str *tests, size_t ntests, bool has_attack)
 {
     struct detect *detect;
 
@@ -25,7 +32,7 @@ s_type_attacks(
         CU_ASSERT_EQUAL(detect_start(detect), 0);
         CU_ASSERT_EQUAL(
             detect_add_data(detect, tests[i].str, tests[i].len, true), 0);
-        CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), 1);
+        CU_ASSERT_EQUAL(detect_has_attack(detect, &attack_types), has_attack);
         CU_ASSERT_EQUAL(detect_stop(detect), 0);
     }
     CU_ASSERT_EQUAL(detect_close(detect), 0);
