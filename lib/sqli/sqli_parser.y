@@ -18,7 +18,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 }
 %define lr.type lalr
 
-%type <data> data_name data_name_only
+%type <data> data_name
 %type <data> operator command
 %type <data> join_type
 %type <data> select_extra_tk
@@ -91,26 +91,15 @@ context:  start_data
         | start_rce
         ;
 
-start_data: TOK_START_DATA data_name_only {
-            /*
-             * Caution! Mid-rule action.
-             * $data_name_only may be later freed by a destructor.
-             */
-            sqli_store_data(ctx, &$data_name_only);
-            $data_name_only.value.str = NULL;
-        } post_exprs_opt data_cont
+start_data: TOK_START_DATA data_cont
+        | TOK_START_DATA expr post_exprs_opt ','[u1] data_cont {
+            YYUSE($u1);
+        }
         ;
 
 start_string: TOK_START_STRING {
             ctx->lexer.instring = true;
-        } data_name_only {
-            /*
-             * Caution! Mid-rule action.
-             * $data_name_only may be later freed by a destructor.
-             */
-            sqli_store_data(ctx, &$data_name_only);
-            $data_name_only.value.str = NULL;
-        } post_exprs_opt data_cont
+        } data_cont
         ;
 
 data_name:  TOK_DATA
@@ -119,12 +108,9 @@ data_name:  TOK_DATA
         /* Tokens-as-identifiers here */
         ;
 
-data_name_only:  data_name
-        ;
-
 data_cont:
-        | after_exp_cont_op after_exp_cont
-        | close_multiple_parens_opt semicolons_opt multiple_sqls
+        | expr post_exprs_opt after_exp_cont_op_noexpr after_exp_cont
+        | expr post_exprs_opt where_opt after_exp_cont_op_noexpr after_exp_cont
         | after_exp_cont
         ;
 

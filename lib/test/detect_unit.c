@@ -464,6 +464,28 @@ Tsqli_semicolons_opt(void)
     s_sqli_attacks({CSTR_LEN("1 SELECT 1 SELECT 2")});
 }
 
+static void
+Tsqli_expr(void)
+{
+    s_sqli_attacks({CSTR_LEN("-(1) WHERE 1=1")});
+}
+
+static void
+Tsqli_var_start_with_num(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("SELECT 1 FROM schema.1table_name")},
+        {CSTR_LEN("SELECT 1eUNION SELECT 1")},
+        {CSTR_LEN("SELECT 1e1UNION SELECT 1")},
+    );
+}
+
+static void
+Tsqli_dot_e_dot(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT 1 from schema 9.e.table_name")});
+}
+
 int
 main(void)
 {
@@ -521,6 +543,9 @@ main(void)
         {"if_else", Tsqli_if_else},
         {"while", Tsqli_while},
         {"semicolons_opt", Tsqli_semicolons_opt},
+        {"expr", Tsqli_expr},
+        {"var_start_with_num", Tsqli_var_start_with_num},
+        {"dot_e_dot", Tsqli_dot_e_dot},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {

@@ -170,7 +170,7 @@ sqli_get_token(
           RET_DATA_ERROR(ctx);
           RET(ctx, TOK_ERROR);
       }
-      <NUMBER> [0-9\.eE] {
+      <NUMBER> [0-9] {
           if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
               DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
               goto sqli_NUMBER;
@@ -179,7 +179,116 @@ sqli_get_token(
               RET(ctx, TOK_ERROR);
           }
       }
-      <NUMBER> [^] => INITIAL {
+      <NUMBER> [\.] => DECIMAL {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_DECIMAL;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <NUMBER> [eE] => EXP {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_EXP;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <NUMBER_OR_VAR> [0-9] {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_NUMBER_OR_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <NUMBER_OR_VAR> [\.] => DECIMAL {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_DECIMAL;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <NUMBER_OR_VAR> [eE] => EXP_OR_VAR {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_EXP_OR_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <NUMBER_OR_VAR> [a-dA-Df-zF-Z_@$] => VAR {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <DECIMAL> [0-9] {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_DECIMAL;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <DECIMAL> [eE] => EXP {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_EXP;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <EXP_OR_VAR> [0-9] => EXP {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_EXP;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <EXP_OR_VAR> [a-zA-Z_@$] => VAR {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <EXP> [0-9] {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto sqli_EXP;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <EXP> [\.] => INITIAL {
+          detect_buf_deinit(&ctx->lexer.buf);
+
+          arg->data.value.str = (char *)&selfsyms['.'];
+          arg->data.value.len = 1;
+          arg->data.flags = SQLI_KEY_INSTR;
+          arg->data.tok = '.';
+          YYSETSTATE(-1);
+          RET(ctx, '.');
+      }
+      <NUMBER_OR_VAR,NUMBER,DECIMAL,EXP_OR_VAR,EXP> [^] => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
@@ -225,10 +334,28 @@ sqli_get_token(
               RET(ctx, TOK_ERROR);
           }
       }
+      <VAR> [\.] {
+          if (ctx->var_start_with_num) {
+             YYSETCONDITION(sqli_INITIAL_AFTER_VAR);
+          } else {
+             YYSETCONDITION(sqli_INITIAL);
+          }
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
+          RET_DATA(NAME, ctx, arg);
+      }
       <VAR> [^] => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
           RET_DATA(NAME, ctx, arg);
+      }
+      <INITIAL_AFTER_VAR> [\.] => INITIAL {
+          YYSETSTATE(-1);
+          arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
+          arg->data.value.len = 1;
+          arg->data.flags = SQLI_KEY_INSTR;
+          arg->data.tok = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1];
+          RET(ctx, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
       }
       <OPERATOR> opchar_nocomment {
   opchar_generic:
@@ -699,11 +826,11 @@ sqli_get_token(
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           goto sqli_BQUOTE;
       }
-      <INITIAL> [\.][0-9] => NUMBER {
+      <INITIAL> [\.][0-9] => DECIMAL {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
           detect_buf_add_char(&ctx->lexer.buf, '.');
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
-          goto sqli_NUMBER;
+          goto sqli_DECIMAL;
       }
       <INITIAL> '0x' => HEXNUMBER {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 2048);
@@ -725,10 +852,18 @@ sqli_get_token(
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           goto sqli_QBITVALUE;
       }
-      <INITIAL> '\\'|[0-9] => NUMBER {
-          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
-          detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
-          goto sqli_NUMBER;
+      <INITIAL> '\\'|[0-9] {
+          if (ctx->var_start_with_num) {
+              YYSETCONDITION(sqli_NUMBER_OR_VAR);
+              detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+              detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+              goto sqli_NUMBER_OR_VAR;
+          } else {
+              YYSETCONDITION(sqli_NUMBER);
+              detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
+              detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+              goto sqli_NUMBER;
+          }
       }
       <INITIAL> self {
           arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
