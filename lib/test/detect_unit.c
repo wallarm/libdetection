@@ -486,6 +486,16 @@ Tsqli_dot_e_dot(void)
     s_sqli_attacks({CSTR_LEN("SELECT 1 from schema 9.e.table_name")});
 }
 
+static void
+Tsqli_data_name(void)
+{
+    s_sqli_attacks({CSTR_LEN("SELECT \"1\" '2'")});
+    s_sqli_attacks({CSTR_LEN("SELECT col FROM db.table")});
+    s_sqli_attacks({CSTR_LEN("SELECT {ts '2013-03-31 00:00:00'}")});
+    s_sqli_attacks({CSTR_LEN("SELECT replace('abc','b','d')")});
+    s_sqli_attacks({CSTR_LEN("SELECT {db.table_name.id} from db.table_name")});
+}
+
 int
 main(void)
 {
@@ -546,6 +556,7 @@ main(void)
         {"expr", Tsqli_expr},
         {"var_start_with_num", Tsqli_var_start_with_num},
         {"dot_e_dot", Tsqli_dot_e_dot},
+        {"data_name", Tsqli_data_name},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
