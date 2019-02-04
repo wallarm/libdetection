@@ -26,17 +26,17 @@ static const struct {
         .var_start_with_num = false,
     },
     [SQLI_CTX_DATA_VAR_START_WITH_NUM] = {
-        .desc = {.name = {CSTR_LEN("data")}},
+        .desc = {.name = {CSTR_LEN("data_num")}},
         .start_tok = TOK_START_DATA,
         .var_start_with_num = true,
     },
     [SQLI_CTX_IN_STRING_VAR_START_WITH_NUM] = {
-        .desc = {.name = {CSTR_LEN("str")}},
+        .desc = {.name = {CSTR_LEN("str_num")}},
         .start_tok = TOK_START_STRING,
         .var_start_with_num = true,
     },
     [SQLI_CTX_RCE_VAR_START_WITH_NUM] = {
-        .desc = {.name = {CSTR_LEN("rce")}, .rce = true},
+        .desc = {.name = {CSTR_LEN("rce_num")}, .rce = true},
         .start_tok = TOK_START_RCE,
         .var_start_with_num = true,
     },
