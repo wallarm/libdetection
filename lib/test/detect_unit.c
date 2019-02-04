@@ -493,6 +493,13 @@ Tsqli_dot_e_dot(void)
     s_sqli_attacks({CSTR_LEN("SELECT 1 from schema 9.e.table_name")});
 }
 
+static void
+Tsqli_label(void)
+{
+    s_sqli_not_attacks({CSTR_LEN("m1:")});
+    s_sqli_attacks({CSTR_LEN("m1: select 1")});
+}
+
 int
 main(void)
 {
@@ -553,6 +560,7 @@ main(void)
         {"expr", Tsqli_expr},
         {"var_start_with_num", Tsqli_var_start_with_num},
         {"dot_e_dot", Tsqli_dot_e_dot},
+        {"label", Tsqli_label},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
