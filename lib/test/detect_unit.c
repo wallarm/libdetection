@@ -4,19 +4,15 @@
 
 #define STR_LEN_ARGS(str) str, sizeof(str) - 1
 
-#define s_sqli_attacks(...)                                    \
+#define s_type_checks_(typename, has_attack, ...)              \
     s_type_checks(                                             \
-        "sqli",                                                \
+        typename,                                              \
         (const struct detect_str []){__VA_ARGS__},             \
         sizeof((const struct detect_str []){__VA_ARGS__})      \
-            / sizeof(const struct detect_str), true)
+            / sizeof(const struct detect_str), has_attack)
 
-#define s_sqli_not_attacks(...)                                \
-    s_type_checks(                                             \
-        "sqli",                                                \
-        (const struct detect_str []){__VA_ARGS__},             \
-        sizeof((const struct detect_str []){__VA_ARGS__})      \
-            / sizeof(const struct detect_str), false)
+#define s_sqli_attacks(...) s_type_checks_("sqli", true, __VA_ARGS__)
+#define s_sqli_not_attacks(...) s_type_checks_("sqli", false, __VA_ARGS__)
 
 static void
 s_type_checks(
