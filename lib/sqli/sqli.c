@@ -8,18 +8,37 @@
 static const struct {
     struct detect_ctx_desc desc;
     enum sqli_parser_tokentype start_tok;
+    bool var_start_with_num;
 } sqli_ctxs[] = {
     [SQLI_CTX_DATA] = {
         .desc = {.name = {CSTR_LEN("data")}},
         .start_tok = TOK_START_DATA,
+        .var_start_with_num = false,
     },
     [SQLI_CTX_IN_STRING] = {
         .desc = {.name = {CSTR_LEN("str")}},
         .start_tok = TOK_START_STRING,
+        .var_start_with_num = false,
     },
     [SQLI_CTX_RCE] = {
         .desc = {.name = {CSTR_LEN("rce")}, .rce = true},
         .start_tok = TOK_START_RCE,
+        .var_start_with_num = false,
+    },
+    [SQLI_CTX_DATA_VAR_START_WITH_NUM] = {
+        .desc = {.name = {CSTR_LEN("data_num")}},
+        .start_tok = TOK_START_DATA,
+        .var_start_with_num = true,
+    },
+    [SQLI_CTX_IN_STRING_VAR_START_WITH_NUM] = {
+        .desc = {.name = {CSTR_LEN("str_num")}},
+        .start_tok = TOK_START_STRING,
+        .var_start_with_num = true,
+    },
+    [SQLI_CTX_RCE_VAR_START_WITH_NUM] = {
+        .desc = {.name = {CSTR_LEN("rce_num")}, .rce = true},
+        .start_tok = TOK_START_RCE,
+        .var_start_with_num = true,
     },
 };
 
@@ -44,6 +63,7 @@ detect_sqli_open(struct detect_parser *parser)
         ctx->type = i;
         ctx->ctxnum = i;
         ctx->detect = detect;
+        ctx->var_start_with_num = sqli_ctxs[i].var_start_with_num;
         detect->ctxs[i] = (void *)ctx;
     }
 

@@ -219,7 +219,6 @@ detect_re2c_yyfill(
         unsigned zero_fill_size = need - (*end - ctx->pos);
         memset((void *)*end, 0, zero_fill_size);
         (*end) += zero_fill_size;
-        ctx->tmp_data_siz += zero_fill_size;
         return (0);
     }
 }
