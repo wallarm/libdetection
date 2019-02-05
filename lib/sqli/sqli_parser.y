@@ -18,7 +18,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 }
 %define lr.type lalr
 
-%type <data> data_name
+%type <data> data data_name
 %type <data> operator command
 %type <data> join_type
 %type <data> select_extra_tk
@@ -33,7 +33,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':'
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}'
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST TOK_EXIST
@@ -103,9 +103,46 @@ start_string: TOK_START_STRING {
         } data_cont
         ;
 
-data_name:  TOK_DATA
+data:     TOK_DATA
+        | data TOK_DATA {
+            if ($1.flags == SQLI_VALUE_NEEDFREE) {
+                $$.value.str = realloc($1.value.str, $1.value.len +
+                                       $2.value.len);
+                if ($$.value.str) {
+                    $1.flags = 0;
+                }
+            } else {
+                $$.value.str = malloc($1.value.len + $2.value.len);
+                memcpy($$.value.str, $1.value.str, $1.value.len);
+                $$.flags = SQLI_VALUE_NEEDFREE;
+            }
+            memcpy($$.value.str + $1.value.len, $2.value.str, $2.value.len);
+            $$.value.len = $1.value.len + $2.value.len;
+
+            sqli_token_data_destructor(&$1);
+            sqli_token_data_destructor(&$2);
+        }
+        ;
+
+data_name:  data
         |   TOK_NAME
         |   TOK_DATA2
+        |   TOK_TABLE
+        | '['[u1] TOK_NAME[name] ']'[u2] {
+            YYUSE($u1);
+            $$ = $name;
+            YYUSE($u2);
+        }
+        | '['[u1] TOK_TABLE[name] ']'[u2] {
+            YYUSE($u1);
+            $$ = $name;
+            YYUSE($u2);
+        }
+        | '{'[u1] TOK_NAME[name] expr '}'[u2] {
+            YYUSE($u1);
+            $$ = $name;
+            YYUSE($u2);
+        }
         /* Tokens-as-identifiers here */
         ;
 
@@ -174,6 +211,10 @@ colref_exact:
         | data_name[dname] '.'[u1] '.'[u2] data_name[colname] {
             sqli_store_data(ctx, &$dname);
             sqli_store_data(ctx, &$colname);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | '{'[u1] colref_exact '}'[u2] {
             YYUSE($u1);
             YYUSE($u2);
         }
@@ -302,6 +343,7 @@ func_name:  colref_exact
         | TOK_LEFT
         | TOK_DATABASE
         | TOK_IF
+        | TOK_REPLACE
         ;
 
 expr_list:

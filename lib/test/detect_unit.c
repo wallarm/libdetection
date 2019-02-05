@@ -496,6 +496,18 @@ Tsqli_label(void)
     s_sqli_attacks({CSTR_LEN("m1: select 1")});
 }
 
+static void
+Tsqli_data_name(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("SELECT \"1\" '2'")},
+        {CSTR_LEN("SELECT col FROM db.table")},
+        {CSTR_LEN("SELECT {ts '2013-03-31 00:00:00'}")},
+        {CSTR_LEN("SELECT replace('abc','b','d')")},
+        {CSTR_LEN("SELECT {db.table_name.id} from db.table_name")},
+    );
+}
+
 int
 main(void)
 {
@@ -557,6 +569,7 @@ main(void)
         {"var_start_with_num", Tsqli_var_start_with_num},
         {"dot_e_dot", Tsqli_dot_e_dot},
         {"label", Tsqli_label},
+        {"data_name", Tsqli_data_name},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
