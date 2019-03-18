@@ -1,3 +1,9 @@
+libdetection (1.1.0-1) stable; urgency=medium
+
+  * Improved SQLi attack detection (Closes: NODE-1445)
+
+ -- Oleg Trifonov <otrifonov@wallarm.com>  Tue, 18 Mar 2019 14:00:46 +0300
+
 libdetection (1.0.0-2) stable; urgency=medium
 
   * fixed packages

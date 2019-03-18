@@ -1,6 +1,6 @@
 Name: libdetection1
-Version: 1.0.0
-Release: 2
+Version: 1.1.0
+Release: 1
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
@@ -70,6 +70,8 @@ require attacks samples to learn.
 %postun -p /sbin/ldconfig
 
 %changelog
+* Mon Mar 18 2019 Oleg Trifonov <otrifonov@wallarm.com> 1.1.0-1
+- Improved SQLi attack detection (Closes: NODE-1445)
 * Tue Feb 13 2018 Alexey Temnikov <atemnikov@wallarm.com> 1.0.0-2
 - fixed packages
 * Mon Feb 12 2018 Alexey Temnikov <atemnikov@wallarm.com> 1.0.0-1
