@@ -11,14 +11,14 @@ Does not require attacks samples to learn.
 - cunit
 - bison
 - re2c
-- [libavl2](http://git.fruit.je/avl)
+- [libwallarmmisc](https://github.com/wallarm/libwallarmmisc)
 
 ## Installation
 
 To build, run
 
 ```sh
-$ ./configure
+$ ./config
 ```
 or, to build with optimizations
 
@@ -35,7 +35,7 @@ $ make -C build
 After that, you will get
 
 1. The library `build/lib/libdetection.so`
-2. Example executable: `build/perf/perf`
+2. Example executable: `build/perf/libdetection_perf`
 
 
 ## Extend syntaxes

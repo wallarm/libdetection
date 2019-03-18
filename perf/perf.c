@@ -263,7 +263,7 @@ main(int argc, char **argv)
         if (report_attacks)
             s_report_attack(nstr, has_attack, attack_types);
         if (echo && (has_attack || verbose > 0))
-            puts(buf);
+            printf("%s", buf);
         if (has_attack ? verbose > 0 : verbose > 1)
             s_perf_dump_result(detect);
         detect_stop(detect);
