@@ -11,6 +11,9 @@ enum SQLI_CTX {
     SQLI_CTX_DATA = 0,
     SQLI_CTX_IN_STRING,
     SQLI_CTX_RCE,
+    SQLI_CTX_DATA_VAR_START_WITH_NUM,
+    SQLI_CTX_IN_STRING_VAR_START_WITH_NUM,
+    SQLI_CTX_RCE_VAR_START_WITH_NUM,
     SQLI_CTX_LAST,
 };
 
@@ -63,6 +66,7 @@ struct sqli_detect_ctx {
     sqli_parser_pstate *pstate;
     struct sqli_detect_lexer_ctx lexer;
     struct detect_ctx_result res;
+    bool var_start_with_num;
 };
 
 DETECT_HIDDEN int sqli_get_token(
