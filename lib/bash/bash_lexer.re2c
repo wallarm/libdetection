@@ -1,0 +1,325 @@
+#include "bash.h"
+#include "bash_lexer.h"
+#include <string.h>
+
+extern void *memrchr(const void *, int, size_t);
+
+/*!max:re2c */
+
+#define MAXBUFSIZ 1024
+#define MINBUFSIZ 32
+
+#define SSYM(ch) [ch] = ch
+
+static const unsigned char selfsyms[] = {
+    SSYM('>'), SSYM('<'), SSYM('-'), SSYM('{'), SSYM('}'), SSYM(';'), SSYM('('),
+    SSYM(')'), SSYM('|'), SSYM('&'), SSYM('\n'), SSYM('\r')
+};
+
+int
+bash_get_token(
+    struct bash_detect_ctx *ctx, union BASH_PARSER_STYPE *arg)
+{
+    const unsigned char *end;
+    unsigned char yych, yyaccept;
+    int rv;
+
+    if ((rv = detect_re2c_prepare_input(&ctx->lexer.re2c, &end, YYMAXFILL)) != 0)
+        return (-rv);
+
+#define YYGETSTATE() ctx->lexer.state
+#define YYSETSTATE(st) \
+    ({ \
+        ctx->lexer.state = (st); \
+    })
+#define YYGETCONDITION() ctx->lexer.condition
+#define YYSETCONDITION(cond) ({ctx->lexer.condition = (cond);})
+#define RET(ctx, tok) \
+    do { \
+       DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c); \
+       ctx->token_before_that = ctx->last_read_token; \
+       ctx->last_read_token = (tok); \
+       return (tok); \
+    } while (0)
+#define KEYNAME_SET(arg, _name_str) \
+    do { \
+        (arg)->data.value.str = _name_str; \
+        (arg)->data.value.len = sizeof(_name_str) - 1; \
+    } while (0)
+#define KEYNAME_SET_RET_EX(ctx, arg, _str, _name, _flags) \
+    do { \
+        KEYNAME_SET(arg, _str); \
+        (arg)->data.flags = (_flags); \
+        (arg)->data.tok = TOK_##_name; \
+        RET(ctx, TOK_##_name); \
+    } while (0)
+#define KEYNAME_SET_RET(ctx, arg, _name, _flags) \
+    KEYNAME_SET_RET_EX(ctx, arg, #_name, _name, _flags);
+#define RET_DATA_EX(toksuff, ctx, arg, _flags) \
+    do { \
+        (arg)->data.value = (ctx)->lexer.buf.data; \
+        (arg)->data.tok = TOK_##toksuff; \
+        (arg)->data.flags = (_flags)|BASH_VALUE_NEEDFREE; \
+        detect_buf_reinit(&(ctx)->lexer.buf); \
+        RET(ctx, TOK_##toksuff); \
+    } while (0)
+#define RET_DATA(toksuff, ctx, arg) \
+    RET_DATA_EX(toksuff, ctx, arg, 0)
+#define RET_DATA_ERROR(ctx) detect_buf_deinit(&(ctx)->lexer.buf)
+
+    /*!re2c
+      re2c:define:YYCTYPE  = "DETECT_RE2C_YYCTYPE";
+      re2c:define:YYCURSOR = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c);
+      re2c:define:YYMARKER = DETECT_RE2C_YYMARKER(&ctx->lexer.re2c);
+      re2c:define:YYCTXMARKER = DETECT_RE2C_YYCTXMARKER(&ctx->lexer.re2c);
+      re2c:define:YYLIMIT  = end;
+      re2c:define:YYCONDTYPE = BASH_LEXER_CONDTYPE;
+      re2c:define:YYFILL   = "DETECT_RE2C_YYFILL(&ctx->lexer.re2c, &end, @@, YYMAXFILL);";
+      re2c:define:YYFILL@len = @@ ;
+      re2c:define:YYFILL:naked = 1;
+      re2c:yyfill:enable   = 1;
+      re2c:yyfill:check    = 1;
+      re2c:yych:conversion = 0;
+      re2c:indent:top      = 1;
+      re2c:variable:yych   = yych;
+      re2c:variable:yyaccept = yyaccept;
+      re2c:condprefix      = bash_;
+      re2c:condenumprefix  = bash_;
+
+      whitespace = [ \t];
+      word = [^\x00 \t<>;()|&\n\r];
+      self = [<>\;()|&\n\r];
+
+      <> {
+          if (ctx->lexer.inword) {
+              YYSETCONDITION(bash_INSTRING);
+              arg->data.flags = BASH_DATA_NOSTART;
+              detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
+              goto bash_INSTRING;
+          }
+          YYSETCONDITION(bash_INITIAL);
+          goto bash_INITIAL;
+      }
+      <INSTRING> ['"] => INITIAL {
+          YYSETSTATE(-1);
+          goto return_word;
+      }
+      <WORD> word {
+          if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\'') {
+              YYSETCONDITION(bash_SQUOTE);
+              YYSETSTATE(-1);
+              goto yy0;
+          }
+          if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '"') {
+              YYSETCONDITION(bash_DQUOTE);
+              YYSETSTATE(-1);
+              goto yy0;
+          }
+          if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\\') {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              YYSETCONDITION(bash_WORD_ESCAPE);
+              YYSETSTATE(-1);
+              goto yy0;
+          }
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_WORD;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <WORD_ESCAPE> word {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_WORD;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <WORD, WORD_ESCAPE> [\x00] {
+          if (ctx->lexer.re2c.fin && ctx->lexer.re2c.tmp_data_in_use &&
+              ctx->lexer.re2c.pos >= ctx->lexer.re2c.tmp_data + ctx->lexer.re2c.tmp_data_siz) {
+              YYSETCONDITION(bash_INITIAL);
+              DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+              YYSETSTATE(-1);
+              goto return_word;
+          }
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto yy0;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <WORD> [<>] => INITIAL {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
+
+          goto return_word;
+      }
+      <WORD_ESCAPE> [^] => INITIAL {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
+
+          goto return_word;
+      }
+      <WORD> [^] => INITIAL {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
+
+return_word:
+          {
+              char *cmds[] = { "7z", "7za", "7zr", "adduser", "alias",
+"apt-get", "arch", "arp", "bash", "batch", "breaksw", "bsdcat", "bsdiff",
+"bsdtar", "builtin", "bzcat", "bzdiff", "bzegrep", "bzfgrep", "bzgrep", "bzip2",
+"bzless", "bzmore", "cat", "cc", "chattr", "chdir", "chflags", "chmod",
+"command", "compress", "cp", "crontab", "csh", "curl", "dash", "dhclient",
+"diff", "dmesg", "doas", "dpkg", "du", "echo", "egrep", "endsw", "env", "false",
+"env-update", "eval", "exec", "exit", "expand", "export", "expr", "fc", "fetch",
+"fgrep", "file", "filetest", "find", "foreach", "ftp" , "ftpstats", "ftpwho",
+"gcc", "gdb", "git", "grep", "gunzip", "gzcat", "gzip", "head", "history",
+"hostid", "hostname", "htdigest", "htpasswd", "hup", "id", "ifconfig",
+"ip6tables", "ipconfig", "iptables", "irb", "irb1", "irb18", "irb19", "irb20",
+"irb21", "irb22", "java", "jexec", "jobs", "kill", "killall", "last",
+"lastcomm", "lastlog", "lastlogin", "less", "lessecho", "lessfile", "lesspipe",
+"lftp", "lftpget", "local", "locate", "logname", "lp", "ls", "ls-F",
+"lsb_release", "lscpu", "lsmod", "lsof", "lspci", "lsusb", "lwp-download",
+"lwp-dump", "lwp-mirror", "lwp-request", "lynx", "lzcat", "lzcmp", "lzdiff",
+"lzegrep", "lzfgrep", "lzgrep", "lzless", "lzma", "lzmore", "mailq", "mkdir",
+"mlocate", "more", "mount", "mv", "mysql", "mysqladmin", "mysqldump",
+"mysqldumpslow", "mysqlhotcopy", "mysqlshow", "nano", "nc", "nc.openbsd",
+"nc.traditional", "ncat", "net", "netcat", "netkit-ftp", "netstat", "nice",
+"nmap", "nohup", "nping", "nslookup", "nstat", "onintr", "openssl", "passwd",
+"perl", "perl5", "perlsh", "perms", "pftp", "pgrep", "php", "php5", "php7",
+"ping", "pkexec", "pkg", "pkg_info", "pkginfo", "pkill", "popd", "printenv",
+"ps", "ptar", "ptardiff", "ptargrep", "pushd", "python", "python2", "python3",
+"python3m", "rar", "rcp", "realpath", "rename", "repeat", "replace", "rm",
+"rmdir", "rmuser", "rnano", "route", "rpm", "rsync", "ruby", "ruby1", "ruby18",
+"ruby19", "ruby20", "ruby21", "ruby22", "sched", "scp", "sdiff", "sed",
+"sendmail", "set", "setenv", "setsid", "sftp", "sh", "sh.distrib", "shutdown",
+"sleep", "socat", "sort", "source", "ssh", "strings", "su", "sudo", "svn",
+"sysctl", "tail", "tailf", "tar", "tcping", "tcptraceroute", "tcsh", "tee",
+"telnet", "time", "timeout", "top", "touch", "traceroute", "traceroute6",
+"uname", "uncompress", "unlzma", "unrar", "unset", "unxz", "unzip", "useradd",
+"userdel", "usermod", "vigr", "vim", "vipw", "w3m", "wget", "who", "whoami",
+"xargs", "xterm", "xz", "xzcat", "xzcmp", "xzdec", "xzdiff", "xzegrep",
+"xzfgrep", "xzgrep", "xzless", "xzmore", "yum", "zcat", "zcmp", "zdiff",
+"zegrep", "zfgrep", "zgrep", "zip", "zless", "zmore", "zrun", "zsh", ".", NULL };
+
+              if (memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len)) {
+                  detect_buf_deinit(&ctx->lexer.buf);
+                  KEYNAME_SET_RET(ctx, arg, ASSIGNMENT_WORD, 0);
+              }
+
+              if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str) {
+                  char *pch = memrchr(ctx->lexer.buf.data.str, '/', ctx->lexer.buf.data.len);
+                  if (!pch)
+                      pch = ctx->lexer.buf.data.str;
+                  else
+                      ++pch;
+                  int len = ctx->lexer.buf.data.len - (pch - ctx->lexer.buf.data.str);
+                  for (char **pcmd = cmds; *pcmd; ++pcmd) {
+                      if (len == strlen(*pcmd) && !strncmp(pch, *pcmd, len)) {
+                          detect_buf_deinit(&ctx->lexer.buf);
+                          KEYNAME_SET_RET(ctx, arg, WORD, BASH_KEY_INSTR);
+                      }
+                  }
+              }
+              if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str &&
+                  ctx->lexer.buf.data.len > 2 && *ctx->lexer.buf.data.str == '$') {
+                  char *pch = ctx->lexer.buf.data.str + 1;
+                  int len = ctx->lexer.buf.data.len - 1;
+                  for (char **pcmd = cmds; *pcmd; ++pcmd) {
+                      if (len == strlen(*pcmd) && !strncmp(pch, *pcmd, len)) {
+                          detect_buf_deinit(&ctx->lexer.buf);
+                          KEYNAME_SET_RET(ctx, arg, WORD, BASH_KEY_INSTR);
+                      }
+                  }
+              }
+
+              detect_buf_deinit(&ctx->lexer.buf);
+              KEYNAME_SET_RET(ctx, arg, WORD, 0);
+          }
+      }
+      <SQUOTE> ['] => WORD {
+          YYSETSTATE(-1);
+          goto yy0;
+      }
+      <DQUOTE> ["] => WORD {
+          YYSETSTATE(-1);
+          goto yy0;
+      }
+      <INSTRING, SQUOTE, DQUOTE> [\x00] {
+          if (ctx->lexer.re2c.fin && ctx->lexer.re2c.tmp_data_in_use &&
+              ctx->lexer.re2c.pos >= ctx->lexer.re2c.tmp_data + ctx->lexer.re2c.tmp_data_siz) {
+              YYSETCONDITION(bash_INITIAL);
+              DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+              arg->data.flags |= BASH_DATA_NOEND;
+              YYSETSTATE(-1);
+              KEYNAME_SET_RET(ctx, arg, WORD, 0);
+          }
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto yy0;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <INSTRING, SQUOTE, DQUOTE> .|[\n] {
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto yy0;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <INSTRING, SQUOTE, DQUOTE> [^] {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
+          RET_DATA_ERROR(ctx);
+          RET(ctx, TOK_ERROR);
+      }
+      <INITIAL> self {
+          arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
+          arg->data.value.len = 1;
+          arg->data.tok = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1];
+          RET(ctx, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+      }
+      <INITIAL> whitespace {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_INITIAL;
+      }
+      <INITIAL> word {
+          detect_buf_init(&ctx->lexer.buf, 32, 1024);
+          if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\'') {
+              YYSETCONDITION(bash_SQUOTE);
+              YYSETSTATE(-1);
+              goto yy0;
+          }
+          if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '"') {
+              YYSETCONDITION(bash_DQUOTE);
+              YYSETSTATE(-1);
+              goto yy0;
+          }
+          if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\\') {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              YYSETCONDITION(bash_WORD_ESCAPE);
+              YYSETSTATE(-1);
+              goto yy0;
+          }
+          if (!detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_WORD;
+          } else {
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <INITIAL> [\x00] { return (0); }
+    */
+}
