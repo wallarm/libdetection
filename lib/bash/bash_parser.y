@@ -58,12 +58,223 @@ word_list: TOK_WORD[u1] {
         }
         ;
 
+redirection: '>'[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | '<'[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] '>'[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_NUMBER[u1] '<'[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] '>'[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] '<'[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_GREATER_GREATER[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_GREATER_GREATER[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_GREATER_GREATER[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_GREATER_BAR[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_GREATER_BAR[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_GREATER_BAR[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_GREATER[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_GREATER[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_GREATER[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_LESS[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_LESS[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_LESS[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_LESS_MINUS[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_LESS_MINUS[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_LESS_MINUS[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_LESS_LESS[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_LESS_LESS[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_LESS_LESS[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_AND[u1] TOK_NUMBER[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_AND[u2] TOK_NUMBER[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_AND[u2] TOK_NUMBER[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_GREATER_AND[u1] TOK_NUMBER[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_GREATER_AND[u2] TOK_NUMBER[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_GREATER_AND[u2] TOK_NUMBER[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_AND[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_AND[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_AND[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_GREATER_AND[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_GREATER_AND[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_GREATER_AND[u2] TOK_WORD[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_GREATER_AND[u1] '-'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_GREATER_AND[u2] '-'[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_GREATER_AND[u2] '-'[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_LESS_AND[u1] '-'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_NUMBER[u1] TOK_LESS_AND[u2] '-'[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_REDIR_WORD[u1] TOK_LESS_AND[u2] '-'[u3] {
+            YYUSE($u1);
+            YYUSE($u2);
+            YYUSE($u3);
+        }
+        | TOK_AND_GREATER[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_AND_GREATER_GREATER[u1] TOK_WORD[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
 simple_command_element: TOK_WORD[tk1] {
             bash_store_data(ctx, &$tk1);
         }
         | TOK_ASSIGNMENT_WORD[u1] {
             YYUSE($u1);
         }
+        | redirection
+        ;
+
+redirection_list: redirection
+        | redirection_list redirection
         ;
 
 simple_command: simple_command_element
@@ -72,6 +283,7 @@ simple_command: simple_command_element
 
 command: simple_command
         | shell_command
+        | shell_command redirection_list
         | function_def
         | coproc
         ;
@@ -303,6 +515,7 @@ function_def: TOK_WORD[tk1] '('[u1] ')'[u2] newline_list function_body {
         ;
 
 function_body: shell_command
+        | shell_command redirection_list
         ;
 
 subshell: '('[u1] compound_list ')'[u2] {
@@ -314,7 +527,14 @@ subshell: '('[u1] compound_list ')'[u2] {
 coproc: TOK_COPROC[tk1] shell_command {
             bash_store_data(ctx, &$tk1);
         }
+        | TOK_COPROC[tk1] shell_command redirection_list {
+            bash_store_data(ctx, &$tk1);
+        }
         | TOK_COPROC[tk1] TOK_WORD[tk2] shell_command {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+        }
+        | TOK_COPROC[tk1] TOK_WORD[tk2] shell_command redirection_list {
             bash_store_data(ctx, &$tk1);
             bash_store_data(ctx, &$tk2);
         }
