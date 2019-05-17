@@ -159,6 +159,10 @@ bash_get_token(
           YYSETSTATE(-1);
           goto return_word;
       }
+      <WORD> [$][_a-zA-Z][_a-zA-Z0-9]*|[$][0-9]|"${"word+"}" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_WORD;
+      }
       <WORD> word {
           if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\'') {
               YYSETCONDITION(bash_SQUOTE);
@@ -542,6 +546,13 @@ return_word:
       <INITIAL> "{"[_a-zA-Z][_a-zA-Z0-9]*"}"/[<>] {
           YYSETSTATE(-1);
           KEYNAME_SET_RET_WO_CHECK(ctx, arg, REDIR_WORD, 0);
+      }
+      <INITIAL> [$][_a-zA-Z][_a-zA-Z0-9]*|[$][0-9]|"${"word+"}" {
+          YYSETSTATE(-1);
+          if (ctx->last_read_token != TOK_WORD)
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+          else
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, 0);
       }
       <INITIAL> word {
           detect_buf_init(&ctx->lexer.buf, 32, 1024);
