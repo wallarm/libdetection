@@ -284,6 +284,22 @@ return_word:
           RET_DATA_ERROR(ctx);
           RET(ctx, TOK_ERROR);
       }
+      <DASHCOMMENT> [\n] => INITIAL {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_INITIAL;
+      }
+      <DASHCOMMENT> [\x00] => INITIAL {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          goto bash_INITIAL;
+      }
+      <DASHCOMMENT> . => DASHCOMMENT {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_DASHCOMMENT;
+      }
+      <INITIAL> '#' => DASHCOMMENT {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_DASHCOMMENT;
+      }
       <INITIAL> self {
           arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
           arg->data.value.len = 1;
