@@ -50,6 +50,14 @@ start_word: TOK_START_WORD {
         } simple_list
         ;
 
+word_list: TOK_WORD[u1] {
+            YYUSE($u1);
+        }
+        | word_list TOK_WORD[u1] {
+            YYUSE($u1);
+        }
+        ;
+
 simple_command_element: TOK_WORD[tk1] {
             bash_store_data(ctx, &$tk1);
         }
@@ -63,6 +71,395 @@ simple_command: simple_command_element
         ;
 
 command: simple_command
+        | shell_command
+        | function_def
+        | coproc
+        ;
+
+shell_command: for_command
+        | case_command
+        | TOK_WHILE[tk1] compound_list TOK_DO[tk2] compound_list TOK_DONE[tk3] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+        }
+        | TOK_UNTIL[tk1] compound_list TOK_DO[tk2] compound_list TOK_DONE[tk3] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+        }
+        | select_command
+        | if_command
+        | subshell
+        | group_command
+        | arith_command
+        | cond_command
+        | arith_for_command
+        ;
+
+for_command: TOK_FOR[tk1] TOK_WORD[tk2] newline_list
+            TOK_DO[tk3] compound_list TOK_DONE[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] newline_list
+            TOK_BEGIN[tk3] compound_list TOK_END[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] ';'[u1] newline_list
+            TOK_DO[tk3] compound_list TOK_DONE[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] ';'[u1] newline_list
+            TOK_BEGIN[tk3] compound_list TOK_END[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] word_list
+            list_terminator newline_list
+            TOK_DO[tk4] compound_list TOK_DONE[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] word_list
+            list_terminator newline_list
+            TOK_BEGIN[tk4] compound_list TOK_END[tk5]
+        {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3]
+            list_terminator newline_list
+            TOK_DO[tk4] compound_list TOK_DONE[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        | TOK_FOR[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3]
+            list_terminator newline_list
+            TOK_BEGIN[tk4] compound_list TOK_END[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        ;
+
+arith_for_command: TOK_FOR[tk1] TOK_ARITH_FOR_EXPRS[tk2]
+            list_terminator newline_list
+            TOK_DO[tk3] compound_list TOK_DONE[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_ARITH_FOR_EXPRS[tk2] list_terminator newline_list
+            TOK_BEGIN[tk3] compound_list TOK_END[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_ARITH_FOR_EXPRS[tk2]
+            TOK_DO[tk3] compound_list TOK_DONE[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_FOR[tk1] TOK_ARITH_FOR_EXPRS[tk2]
+            TOK_BEGIN[tk3] compound_list TOK_END[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        ;
+
+select_command: TOK_SELECT[tk1] TOK_WORD[tk2] newline_list
+            TOK_DO[tk3] list TOK_DONE[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] newline_list
+            TOK_BEGIN[tk3] list TOK_END[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] ';'[u1] newline_list
+            TOK_DO[tk3] list TOK_DONE[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] ';'[u1] newline_list
+            TOK_BEGIN[tk3] list TOK_END[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] word_list
+            list_terminator newline_list TOK_DO[tk4] list TOK_DONE[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] word_list
+            list_terminator newline_list TOK_BEGIN[tk4] list TOK_END[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] list_terminator
+            newline_list TOK_DO[tk4] compound_list TOK_DONE[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        | TOK_SELECT[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] list_terminator
+            newline_list TOK_BEGIN[tk4] compound_list TOK_END[tk5] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+            bash_store_data(ctx, &$tk5);
+        }
+        ;
+
+case_command: TOK_CASE[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] newline_list
+            TOK_ESAC[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_CASE[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3]
+            case_clause_sequence newline_list TOK_ESAC[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_CASE[tk1] TOK_WORD[tk2] newline_list TOK_IN[tk3] case_clause
+            TOK_ESAC[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        ;
+
+function_def: TOK_WORD[tk1] '('[u1] ')'[u2] newline_list function_body {
+            bash_store_data(ctx, &$tk1);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_FUNCTION[tk1] TOK_WORD[tk2] '('[u1] ')'[u2] newline_list
+            function_body {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_FUNCTION[tk1] TOK_WORD[tk2] newline_list function_body {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+        }
+        ;
+
+function_body: shell_command
+        ;
+
+subshell: '('[u1] compound_list ')'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
+coproc: TOK_COPROC[tk1] shell_command {
+            bash_store_data(ctx, &$tk1);
+        }
+        | TOK_COPROC[tk1] TOK_WORD[tk2] shell_command {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+        }
+        | TOK_COPROC[tk1] simple_command {
+            bash_store_data(ctx, &$tk1);
+        }
+        ;
+
+if_command: TOK_IF[tk1] compound_list TOK_THEN[tk2] compound_list TOK_FI[tk3] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+        }
+        | TOK_IF[tk1] compound_list TOK_THEN[tk2] compound_list
+            TOK_ELSE[tk3] compound_list TOK_FI[tk4] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+            bash_store_data(ctx, &$tk4);
+        }
+        | TOK_IF[tk1] compound_list TOK_THEN[tk2] compound_list
+            elif_clause TOK_FI[tk3] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+        }
+        ;
+
+group_command: TOK_BEGIN[tk1] compound_list TOK_END[tk2] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+        }
+        ;
+
+arith_command: TOK_ARITH_CMD[tk1] {
+            bash_store_data(ctx, &$tk1);
+        }
+        ;
+
+cond_command: TOK_COND_START[tk1] TOK_COND_CMD[tk2] TOK_COND_END[tk3] {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+        }
+        ;
+
+elif_clause: TOK_ELIF[tk1] compound_list TOK_THEN[tk2] compound_list {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+        }
+        | TOK_ELIF[tk1] compound_list TOK_THEN[tk2] compound_list
+            TOK_ELSE[tk3] compound_list {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+            bash_store_data(ctx, &$tk3);
+        }
+        | TOK_ELIF[tk1] compound_list TOK_THEN[tk2] compound_list elif_clause {
+            bash_store_data(ctx, &$tk1);
+            bash_store_data(ctx, &$tk2);
+        }
+        ;
+
+case_clause:pattern_list
+        | case_clause_sequence pattern_list
+        ;
+
+pattern_list: newline_list pattern ')'[u1] compound_list {
+            YYUSE($u1);
+        }
+        | newline_list pattern ')'[u1] newline_list {
+            YYUSE($u1);
+        }
+        | newline_list '('[u1] pattern ')'[u2] compound_list {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | newline_list '('[u1] pattern ')'[u2] newline_list {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
+case_clause_sequence: pattern_list TOK_SEMI_SEMI[u1] {
+            YYUSE($u1);
+        }
+        | case_clause_sequence pattern_list TOK_SEMI_SEMI[u1] {
+            YYUSE($u1);
+        }
+        | pattern_list TOK_SEMI_AND[u1] {
+            YYUSE($u1);
+        }
+        | case_clause_sequence pattern_list TOK_SEMI_AND[u1] {
+            YYUSE($u1);
+        }
+        | pattern_list TOK_SEMI_SEMI_AND[u1] {
+            YYUSE($u1);
+        }
+        |case_clause_sequence pattern_list TOK_SEMI_SEMI_AND[u1] {
+            YYUSE($u1);
+        }
+        ;
+
+pattern: TOK_WORD[tk1] {
+            bash_store_data(ctx, &$tk1);
+        }
+        | pattern '|'[u1] TOK_WORD[tk1] {
+            YYUSE($u1);
+            bash_store_data(ctx, &$tk1);
+        }
+        ;
+
+list: newline_list list0
+        ;
+
+compound_list: list
+        | newline_list list1
+        ;
+
+list0: list1 '\n'[u1] newline_list {
+            YYUSE($u1);
+        }
+        | list1 '&'[u1] newline_list {
+            YYUSE($u1);
+        }
+        | list1 ';'[u1] newline_list {
+            YYUSE($u1);
+        }
+        ;
+
+list1: list1 TOK_AND_AND[u1] newline_list list1 {
+            YYUSE($u1);
+        }
+        | list1 TOK_OR_OR[u1] newline_list list1 {
+            YYUSE($u1);
+        }
+        | list1 '&'[u1] newline_list list1 {
+            YYUSE($u1);
+        }
+        | list1 ';'[u1] newline_list list1 {
+            YYUSE($u1);
+        }
+        | list1 '\n'[u1] newline_list list1 {
+            YYUSE($u1);
+        }
+        |pipeline_command
         ;
 
 list_terminator: '\n'[u1] {
