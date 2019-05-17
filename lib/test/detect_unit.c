@@ -520,6 +520,9 @@ Tbash_simplest(void)
         {CSTR_LEN("l's' -a")},
         {CSTR_LEN("l\\s -a")},
         {CSTR_LEN("VAR=VAL ls")},
+        {CSTR_LEN("VAR=VAL l$1s")},
+        {CSTR_LEN("VAR=VAL l$name's'")},
+        {CSTR_LEN("VAR=VAL l${name}s")},
     );
 }
 
