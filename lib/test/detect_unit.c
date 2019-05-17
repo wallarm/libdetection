@@ -637,6 +637,16 @@ Tbash_inj(void)
     );
 }
 
+static void
+Tbash_substitute(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("e$(FOO='BAR BAR BAR' echo ch)o test")},
+        {CSTR_LEN("foo <(FOO='BAR BAR BAR' ls)")},
+        {CSTR_LEN("foo >(FOO='BAR BAR BAR' last)")},
+    );
+}
+
 int
 main(void)
 {
@@ -708,6 +718,7 @@ main(void)
         {"commands", Tbash_commands},
         {"redirection", Tbash_redirection},
         {"inj", Tbash_inj},
+        {"substitute", Tbash_substitute},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
