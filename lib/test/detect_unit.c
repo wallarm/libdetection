@@ -572,6 +572,57 @@ Tbash_commands(void)
     );
 }
 
+static void
+Tbash_redirection(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("ls > file")},
+        {CSTR_LEN("ls > file")},
+        {CSTR_LEN("ls < file")},
+        {CSTR_LEN("ls 1> file")},
+        {CSTR_LEN("ls 2< file")},
+        {CSTR_LEN("ls {a}> file")},
+        {CSTR_LEN("ls {a}< file")},
+        {CSTR_LEN("ls >> file")},
+        {CSTR_LEN("ls 1>> file")},
+        {CSTR_LEN("ls {a}>> file")},
+        {CSTR_LEN("ls >| file")},
+        {CSTR_LEN("ls 1>| file")},
+        {CSTR_LEN("ls {a}>| file")},
+        {CSTR_LEN("ls <> file")},
+        {CSTR_LEN("ls 3<> file")},
+        {CSTR_LEN("ls {a}<> file")},
+        {CSTR_LEN("ls << file")},
+        {CSTR_LEN("ls 2<< file")},
+        {CSTR_LEN("ls {a}<< file")},
+        {CSTR_LEN("ls <<- file")},
+        {CSTR_LEN("ls 2<<- file")},
+        {CSTR_LEN("ls {a}<<- file")},
+        {CSTR_LEN("ls <<< file")},
+        {CSTR_LEN("ls <& 1")},
+        {CSTR_LEN("ls 2<& 1")},
+        {CSTR_LEN("ls {a}<& 1")},
+        {CSTR_LEN("ls >& 1")},
+        {CSTR_LEN("ls 2>& 1")},
+        {CSTR_LEN("ls {a}>& 1")},
+        {CSTR_LEN("ls <& file")},
+        {CSTR_LEN("ls 2<& file")},
+        {CSTR_LEN("ls {a}<& file")},
+        {CSTR_LEN("ls >& file")},
+        {CSTR_LEN("ls 2>& file")},
+        {CSTR_LEN("ls {a}>& file")},
+        {CSTR_LEN("ls <& -")},
+        {CSTR_LEN("ls 2<& -")},
+        {CSTR_LEN("ls {a}<& -")},
+        {CSTR_LEN("ls >& -")},
+        {CSTR_LEN("ls 2>& -")},
+        {CSTR_LEN("ls {a}>& -")},
+        {CSTR_LEN("ls &> file")},
+        {CSTR_LEN("ls 2&> file")},
+        {CSTR_LEN("ls {a}&> file")},
+    );
+}
+
 int
 main(void)
 {
@@ -641,6 +692,7 @@ main(void)
         {"comment", Tbash_comment},
         {"simplelist", Tbash_simplelist},
         {"commands", Tbash_commands},
+        {"redirection", Tbash_redirection},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
