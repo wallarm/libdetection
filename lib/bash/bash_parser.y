@@ -42,12 +42,32 @@ context: start_rce
         | start_word
         ;
 
-start_rce: TOK_START_RCE simple_list
+start_rce: TOK_START_RCE inj
         ;
 
 start_word: TOK_START_WORD {
             ctx->lexer.inword = true;
-        } simple_list
+        } inj
+        ;
+
+inj: simple_list
+        | inj simple_list_terminator
+        | simple_list_terminator inj
+        | ';'[u1] inj {
+            YYUSE($u1);
+        }
+        | '|'[u1] inj {
+            YYUSE($u1);
+        }
+        | TOK_OR_OR[u1] inj {
+            YYUSE($u1);
+        }
+        | '&'[u1] inj {
+            YYUSE($u1);
+        }
+        | TOK_AND_AND[u1] inj {
+            YYUSE($u1);
+        }
         ;
 
 word_list: TOK_WORD[u1] {
@@ -680,6 +700,15 @@ list1: list1 TOK_AND_AND[u1] newline_list list1 {
             YYUSE($u1);
         }
         |pipeline_command
+        ;
+
+simple_list_terminator: '\n'[u1] {
+            YYUSE($u1);
+        }
+        | '\r'[u1] '\n'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
         ;
 
 list_terminator: '\n'[u1] {
