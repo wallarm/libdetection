@@ -550,6 +550,28 @@ Tbash_simplelist(void)
     );
 }
 
+static void
+Tbash_commands(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("for test do echo i; done")},
+        {CSTR_LEN("for test; { echo i; }")},
+        {CSTR_LEN("for i in {1..5}; do echo i; done")},
+        {CSTR_LEN("for i in {1..5}; { echo i; }")},
+        {CSTR_LEN("for ((i=1; i<=10; ++i)) ; do echo $i ; done")},
+        {CSTR_LEN("for ((i=1; i<=10; ++i)) ; { echo $i ; }")},
+        {CSTR_LEN("select name do ls ; done")},
+        {CSTR_LEN("select name; do ls ; done")},
+        {CSTR_LEN("select name; { ls ; }")},
+        {CSTR_LEN("case 1 in 1) echo one;; 2) echo two;; esac")},
+        {CSTR_LEN("function a () { ( echo aaahh; ) }; a")},
+        {CSTR_LEN("coproc tee")},
+        {CSTR_LEN("if [ 1 -eq 2 ];  then echo equal ; else echo 'not equal' ; fi")},
+        {CSTR_LEN("(ls -a)")},
+        {CSTR_LEN("{ ls -a; }")},
+    );
+}
+
 int
 main(void)
 {
@@ -618,6 +640,7 @@ main(void)
         {"simplest", Tbash_simplest},
         {"comment", Tbash_comment},
         {"simplelist", Tbash_simplelist},
+        {"commands", Tbash_commands},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
