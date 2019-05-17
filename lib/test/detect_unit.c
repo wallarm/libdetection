@@ -523,6 +523,14 @@ Tbash_simplest(void)
     );
 }
 
+static void
+Tbash_comment(void)
+{
+    s_bash_not_attacks(
+        {CSTR_LEN("#ls -a")},
+    );
+}
+
 int
 main(void)
 {
@@ -589,6 +597,7 @@ main(void)
     };
     CU_TestInfo bash_tests[] = {
         {"simplest", Tbash_simplest},
+        {"comment", Tbash_comment},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
