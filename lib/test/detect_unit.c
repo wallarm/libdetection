@@ -534,6 +534,22 @@ Tbash_comment(void)
     );
 }
 
+static void
+Tbash_simplelist(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("ls;ls")},
+        {CSTR_LEN("ls&ls")},
+        {CSTR_LEN("ls&&ls")},
+        {CSTR_LEN("ls|ls")},
+        {CSTR_LEN("ls|&ls")},
+        {CSTR_LEN("ls||ls")},
+        {CSTR_LEN("ls|")},
+        {CSTR_LEN("time -p -- ls|ls")},
+        {CSTR_LEN("! ls|ls")},
+    );
+}
+
 int
 main(void)
 {
@@ -601,6 +617,7 @@ main(void)
     CU_TestInfo bash_tests[] = {
         {"simplest", Tbash_simplest},
         {"comment", Tbash_comment},
+        {"simplelist", Tbash_simplelist},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
