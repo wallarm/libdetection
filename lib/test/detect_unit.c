@@ -623,6 +623,20 @@ Tbash_redirection(void)
     );
 }
 
+static void
+Tbash_inj(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("\nls")},
+        {CSTR_LEN("\r\nls")},
+        {CSTR_LEN(";ls")},
+        {CSTR_LEN("|ls")},
+        {CSTR_LEN("||ls")},
+        {CSTR_LEN("&ls")},
+        {CSTR_LEN("&&ls")},
+    );
+}
+
 int
 main(void)
 {
@@ -693,6 +707,7 @@ main(void)
         {"simplelist", Tbash_simplelist},
         {"commands", Tbash_commands},
         {"redirection", Tbash_redirection},
+        {"inj", Tbash_inj},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
