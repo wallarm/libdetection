@@ -141,9 +141,9 @@ bash_get_token(
       re2c:condenumprefix  = bash_;
 
       whitespace = [ \t];
-      word = [^\x00 \t<>;()|&\n\r];
-      self = [<>\;()|&\n\r];
-      key_end = [\x00 \t<>;()|&\n\r];
+      word = [^\x00 \t<>;()|&\n\r`];
+      self = [<>\;()|&\n\r`];
+      key_end = [\x00 \t<>;()|&\n\r`];
 
       <> {
           if (ctx->lexer.inword) {
@@ -241,6 +241,12 @@ bash_get_token(
               KEYNAME_SET_RET(ctx, arg, NUMBER, 0);
           }
 
+          goto return_word;
+      }
+      <WORD> "$(" => INITIAL {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
           goto return_word;
       }
       <WORD_ESCAPE> [^] => INITIAL {
@@ -430,6 +436,15 @@ return_word:
       }
       <INITIAL> '|&' {
           RET_DATA(BAR_AND, ctx, arg);
+      }
+      <INITIAL> '$(' {
+          RET_DATA(SUBSH_START, ctx, arg);
+      }
+      <INITIAL> '<(' {
+          RET_DATA(SUBSH_START, ctx, arg);
+      }
+      <INITIAL> '>(' {
+          RET_DATA(SUBSH_START, ctx, arg);
       }
       <INITIAL> "if"/key_end {
           KEYNAME_SET_RET(ctx, arg, IF, BASH_KEY_INSTR);

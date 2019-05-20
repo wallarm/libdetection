@@ -18,13 +18,13 @@ bash_parser_error(struct bash_detect_ctx *ctx, const char *s)
 
 %token TOK_START_RCE
 %token TOK_START_WORD
-%token <data> '<' '>' '-' ';' '(' ')' '|' '&' '\n' '\r'
+%token <data> '<' '>' '-' ';' '(' ')' '|' '&' '\n' '\r' '`'
 %token <data> TOK_WORD TOK_NUMBER TOK_IF TOK_THEN TOK_ELSE TOK_ELIF TOK_FI
               TOK_CASE TOK_ESAC TOK_FOR TOK_SELECT TOK_WHILE TOK_UNTIL TOK_DO
               TOK_DONE TOK_IN TOK_FUNCTION TOK_TIME TOK_TIMEOPT TOK_TIMEIGN
               TOK_BEGIN TOK_END TOK_BANG TOK_COND_START TOK_COND_END TOK_COPROC
               TOK_ASSIGNMENT_WORD TOK_REDIR_WORD TOK_ARITH_CMD
-              TOK_ARITH_FOR_EXPRS TOK_COND_CMD
+              TOK_ARITH_FOR_EXPRS TOK_COND_CMD TOK_SUBSH_START
 %token <data> TOK_LESS_LESS_LESS TOK_LESS_LESS_MINUS TOK_AND_GREATER_GREATER
               TOK_SEMI_SEMI_AND TOK_LESS_LESS TOK_LESS_GREATER TOK_LESS_AND
               TOK_GREATER_GREATER TOK_GREATER_AND TOK_GREATER_BAR
@@ -297,8 +297,31 @@ redirection_list: redirection
         | redirection_list redirection
         ;
 
-simple_command: simple_command_element
-        | simple_command simple_command_element
+simple_command1: simple_command_element
+        | simple_command1 simple_command_element
+        ;
+
+simple_command2: simple_command1
+        | '`'[u1] simple_command1 '`'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_SUBSH_START[u1] simple_command1 ')'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | '`'[u1] simple_list1 '`'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_SUBSH_START[u1] simple_list1 ')'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
+simple_command: simple_command2
+        | simple_command simple_command2
         ;
 
 command: simple_command
