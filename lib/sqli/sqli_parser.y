@@ -149,7 +149,6 @@ data_name:  data
 data_cont:
         | expr post_exprs_opt after_exp_cont_op_noexpr after_exp_cont
         | expr post_exprs_opt where_opt after_exp_cont_op_noexpr after_exp_cont
-        | after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -1054,6 +1053,7 @@ after_exp_cont:
 
 start_rce_cont: close_multiple_parens_opt semicolons_opt multiple_sqls
         | close_multiple_parens_opt op_expr after_exp_cont
+        | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
         ;
 
 %%
