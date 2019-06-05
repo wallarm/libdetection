@@ -260,7 +260,7 @@ Tsqli_execute(void)
 static void
 Tsqli_nul_in_str(void)
 {
-    s_sqli_attacks({CSTR_LEN("1\0' ^ '")});
+    s_sqli_attacks({CSTR_LEN("1\0' OR '")});
 }
 
 static void

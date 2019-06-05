@@ -19,7 +19,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %define lr.type lalr
 
 %type <data> data data_name
-%type <data> operator command
+%type <data> operator important_operator command
 %type <data> join_type
 %type <data> select_extra_tk
 %type <data> union_tk
@@ -256,8 +256,11 @@ within_opt:
 
 expr_common:
           func over_opt within_opt
+        | important_operator expr {
+            sqli_store_data(ctx, &$important_operator);
+        }
         | operator expr {
-            sqli_store_data(ctx, &$operator);
+            YYUSE($operator);
         }
         | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
@@ -411,13 +414,23 @@ func:     func_name func_args {
 expr:   expr_common
         | colref_exact
         | colref_asterisk
+        | expr important_operator expr {
+            sqli_store_data(ctx, &$important_operator);
+        }
         | expr operator expr {
-            sqli_store_data(ctx, &$operator);
+            YYUSE($operator);
         }
         | expr post_exprs
         ;
 
-operator: TOK_OR
+operator: TOK_OPERATOR
+        | '*'
+        | '='
+        | '.'
+        | ':'
+        ;
+
+important_operator: TOK_OR
         | TOK_AND
         | TOK_IS
         | TOK_NOT
@@ -428,7 +441,6 @@ operator: TOK_OR
         | TOK_BETWEEN
         | TOK_LIKE
         | TOK_RLIKE
-        | TOK_OPERATOR
         | TOK_WAITFOR
         | TOK_DELAY
         | TOK_IN
@@ -442,10 +454,6 @@ operator: TOK_OR
         | TOK_EXIST
         | TOK_AS
         | TOK_UESCAPE
-        | '*'
-        | '='
-        | '.'
-        | ':'
         ;
 
 select_distinct_opt:
