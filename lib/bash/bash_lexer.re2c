@@ -16,6 +16,53 @@ static const unsigned char selfsyms[] = {
     SSYM(')'), SSYM('|'), SSYM('&'), SSYM('\n'), SSYM('\r')
 };
 
+static int
+keyname_acceptable(struct bash_detect_ctx *ctx)
+{
+    switch (ctx->last_read_token)
+    {
+        case '\n':
+        case ';':
+        case '(':
+        case ')':
+        case '|':
+        case '&':
+        case '{':
+        case '}':
+        case TOK_AND_AND:
+        case TOK_BANG:
+        case TOK_BAR_AND:
+        case TOK_DO:
+        case TOK_DONE:
+        case TOK_ELIF:
+        case TOK_ELSE:
+        case TOK_ESAC:
+        case TOK_FI:
+        case TOK_IF:
+        case TOK_OR_OR:
+        case TOK_SEMI_SEMI:
+        case TOK_SEMI_AND:
+        case TOK_SEMI_SEMI_AND:
+        case TOK_THEN:
+        case TOK_TIME:
+        case TOK_TIMEOPT:
+        case TOK_TIMEIGN:
+        case TOK_COPROC:
+        case TOK_UNTIL:
+        case TOK_WHILE:
+        case 0:
+          return 1;
+        default:
+        if (ctx->last_read_token == TOK_WORD &&
+            ctx->token_before_that == TOK_COPROC)
+            return 1;
+        if (ctx->last_read_token == TOK_WORD &&
+            ctx->token_before_that == TOK_FUNCTION)
+            return 1;
+        return 0;
+    }
+}
+
 int
 bash_get_token(
     struct bash_detect_ctx *ctx, union BASH_PARSER_STYPE *arg)
@@ -53,8 +100,15 @@ bash_get_token(
         (arg)->data.tok = TOK_##_name; \
         RET(ctx, TOK_##_name); \
     } while (0)
+#define KEYNAME_SET_RET_WO_CHECK(ctx, arg, _name, _flags) \
+    KEYNAME_SET_RET_EX(ctx, arg, #_name, _name, _flags)
 #define KEYNAME_SET_RET(ctx, arg, _name, _flags) \
-    KEYNAME_SET_RET_EX(ctx, arg, #_name, _name, _flags);
+    do { \
+        if (keyname_acceptable(ctx)) \
+            KEYNAME_SET_RET_EX(ctx, arg, #_name, _name, _flags); \
+        else \
+            KEYNAME_SET_RET_EX(ctx, arg, "WORD", WORD, 0); \
+    } while (0)
 #define RET_DATA_EX(toksuff, ctx, arg, _flags) \
     do { \
         (arg)->data.value = (ctx)->lexer.buf.data; \
@@ -89,6 +143,7 @@ bash_get_token(
       whitespace = [ \t];
       word = [^\x00 \t<>;()|&\n\r];
       self = [<>\;()|&\n\r];
+      key_end = [\x00 \t<>;()|&\n\r];
 
       <> {
           if (ctx->lexer.inword) {
@@ -158,6 +213,30 @@ bash_get_token(
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
 
+          if (ctx->last_read_token == TOK_LESS_AND ||
+              ctx->last_read_token == TOK_GREATER_AND) {
+              char *ep = NULL;
+
+              if (detect_buf_add_char(&ctx->lexer.buf, '\0')) {
+                  detect_buf_deinit(&ctx->lexer.buf);
+                  RET(ctx, TOK_ERROR);
+              }
+
+              strtoll(ctx->lexer.buf.data.str, &ep, 10);
+
+              ctx->lexer.buf.data.len--;
+
+              if (errno || ep == ctx->lexer.buf.data.str) {
+                  if (ctx->lexer.buf.data.str[0] == '{' &&
+                      ctx->lexer.buf.data.str[ctx->lexer.buf.data.len - 1] == '}' &&
+                      1)
+                      KEYNAME_SET_RET(ctx, arg, REDIR_WORD, 0);
+                  goto return_word;
+              }
+
+              KEYNAME_SET_RET(ctx, arg, NUMBER, 0);
+          }
+
           goto return_word;
       }
       <WORD_ESCAPE> [^] => INITIAL {
@@ -211,7 +290,7 @@ return_word:
 
               if (memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len)) {
                   detect_buf_deinit(&ctx->lexer.buf);
-                  KEYNAME_SET_RET(ctx, arg, ASSIGNMENT_WORD, 0);
+                  KEYNAME_SET_RET_WO_CHECK(ctx, arg, ASSIGNMENT_WORD, 0);
               }
 
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str) {
@@ -224,7 +303,7 @@ return_word:
                   for (char **pcmd = cmds; *pcmd; ++pcmd) {
                       if (len == strlen(*pcmd) && !strncmp(pch, *pcmd, len)) {
                           detect_buf_deinit(&ctx->lexer.buf);
-                          KEYNAME_SET_RET(ctx, arg, WORD, BASH_KEY_INSTR);
+                          KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
                       }
                   }
               }
@@ -235,7 +314,7 @@ return_word:
                   for (char **pcmd = cmds; *pcmd; ++pcmd) {
                       if (len == strlen(*pcmd) && !strncmp(pch, *pcmd, len)) {
                           detect_buf_deinit(&ctx->lexer.buf);
-                          KEYNAME_SET_RET(ctx, arg, WORD, BASH_KEY_INSTR);
+                          KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
                       }
                   }
               }
@@ -300,6 +379,156 @@ return_word:
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto bash_DASHCOMMENT;
       }
+      <INITIAL> '<<<' {
+          RET_DATA(LESS_LESS_LESS, ctx, arg);
+      }
+      <INITIAL> '<<-' {
+          RET_DATA(LESS_LESS_MINUS, ctx, arg);
+      }
+      <INITIAL> '&>>' {
+          RET_DATA(AND_GREATER_GREATER, ctx, arg);
+      }
+      <INITIAL> ';;&' {
+          RET_DATA(SEMI_SEMI_AND, ctx, arg);
+      }
+      <INITIAL> '<<' {
+          RET_DATA(LESS_LESS, ctx, arg);
+      }
+      <INITIAL> '<>' {
+          RET_DATA(LESS_GREATER, ctx, arg);
+      }
+      <INITIAL> '<&' {
+          RET_DATA(LESS_AND, ctx, arg);
+      }
+      <INITIAL> '>>' {
+          RET_DATA(GREATER_GREATER, ctx, arg);
+      }
+      <INITIAL> '>&' {
+          RET_DATA(GREATER_AND, ctx, arg);
+      }
+      <INITIAL> '>|' {
+          RET_DATA(GREATER_BAR, ctx, arg);
+      }
+      <INITIAL> '&>' {
+          RET_DATA(AND_GREATER, ctx, arg);
+      }
+      <INITIAL> '&&' {
+          RET_DATA(AND_AND, ctx, arg);
+      }
+      <INITIAL> '||' {
+          RET_DATA(OR_OR, ctx, arg);
+      }
+      <INITIAL> ';;' {
+          RET_DATA(SEMI_SEMI, ctx, arg);
+      }
+      <INITIAL> ';&' {
+          RET_DATA(SEMI_AND, ctx, arg);
+      }
+      <INITIAL> '|&' {
+          RET_DATA(BAR_AND, ctx, arg);
+      }
+      <INITIAL> "if"/key_end {
+          KEYNAME_SET_RET(ctx, arg, IF, BASH_KEY_INSTR);
+      }
+      <INITIAL> "then"/key_end {
+          KEYNAME_SET_RET(ctx, arg, THEN, BASH_KEY_INSTR);
+      }
+      <INITIAL> "else"/key_end {
+          KEYNAME_SET_RET(ctx, arg, ELSE, BASH_KEY_INSTR);
+      }
+      <INITIAL> "elif"/key_end {
+          KEYNAME_SET_RET(ctx, arg, ELIF, BASH_KEY_INSTR);
+      }
+      <INITIAL> "fi"/key_end {
+          KEYNAME_SET_RET(ctx, arg, FI, BASH_KEY_INSTR);
+      }
+      <INITIAL> "case"/key_end {
+          KEYNAME_SET_RET(ctx, arg, CASE, BASH_KEY_INSTR);
+      }
+      <INITIAL> "esac"/key_end {
+          KEYNAME_SET_RET(ctx, arg, ESAC, BASH_KEY_INSTR);
+      }
+      <INITIAL> "for"/key_end {
+          KEYNAME_SET_RET(ctx, arg, FOR, BASH_KEY_INSTR);
+      }
+      <INITIAL> "select"/key_end {
+          KEYNAME_SET_RET(ctx, arg, SELECT, BASH_KEY_INSTR);
+      }
+      <INITIAL> "while"/key_end {
+          KEYNAME_SET_RET(ctx, arg, WHILE, BASH_KEY_INSTR);
+      }
+      <INITIAL> "until"/key_end {
+          KEYNAME_SET_RET(ctx, arg, UNTIL, BASH_KEY_INSTR);
+      }
+      <INITIAL> "do"/key_end {
+          if (ctx->last_read_token == TOK_WORD &&
+              (ctx->token_before_that == TOK_FOR ||
+               ctx->token_before_that == TOK_SELECT)) {
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, DO, BASH_KEY_INSTR);
+          }
+          if (ctx->last_read_token == '\n' || ctx->last_read_token == ';')
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, DO, BASH_KEY_INSTR);
+          if (ctx->last_read_token == TOK_ARITH_FOR_EXPRS)
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, DO, BASH_KEY_INSTR);
+          KEYNAME_SET_RET(ctx, arg, DO, BASH_KEY_INSTR);
+      }
+      <INITIAL> "done"/key_end {
+          KEYNAME_SET_RET(ctx, arg, DONE, BASH_KEY_INSTR);
+      }
+      <INITIAL> "in"/key_end {
+          if ((ctx->last_read_token == TOK_WORD) &&
+              (ctx->token_before_that == TOK_FOR ||
+               ctx->token_before_that == TOK_CASE ||
+               ctx->token_before_that == TOK_SELECT)) {
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, IN, BASH_KEY_INSTR);
+          }
+         if (ctx->last_read_token == TOK_WORD || ctx->last_read_token == '\n')
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, IN, BASH_KEY_INSTR);
+          KEYNAME_SET_RET(ctx, arg, IN, BASH_KEY_INSTR);
+      }
+      <INITIAL> "function"/key_end {
+          KEYNAME_SET_RET(ctx, arg, FUNCTION, BASH_KEY_INSTR);
+      }
+      <INITIAL> "time"/key_end {
+          KEYNAME_SET_RET(ctx, arg, TIME, BASH_KEY_INSTR);
+      }
+      <INITIAL> "{"/key_end {
+          if (ctx->last_read_token == TOK_ARITH_FOR_EXPRS)
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, BEGIN, BASH_KEY_INSTR);
+          KEYNAME_SET_RET(ctx, arg, BEGIN, BASH_KEY_INSTR);
+      }
+      <INITIAL> "}"/key_end {
+          KEYNAME_SET_RET(ctx, arg, END, BASH_KEY_INSTR);
+      }
+      <INITIAL> "!"/key_end {
+          KEYNAME_SET_RET(ctx, arg, BANG, BASH_KEY_INSTR);
+      }
+      <INITIAL> "[["/key_end {
+          KEYNAME_SET_RET(ctx, arg, COND_START, BASH_KEY_INSTR);
+      }
+      <INITIAL> "]]"/key_end {
+          KEYNAME_SET_RET(ctx, arg, COND_END, BASH_KEY_INSTR);
+      }
+      <INITIAL> "coproc"/key_end {
+          KEYNAME_SET_RET(ctx, arg, COPROC, BASH_KEY_INSTR);
+      }
+      <INITIAL> "-p"/key_end {
+          if (ctx->last_read_token == TOK_TIME)
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, TIMEOPT, BASH_KEY_INSTR);
+          KEYNAME_SET_RET(ctx, arg, TIMEOPT, BASH_KEY_INSTR);
+      }
+      <INITIAL> "--"/key_end {
+          if (ctx->last_read_token == TOK_TIMEOPT)
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, TIMEIGN, BASH_KEY_INSTR);
+          KEYNAME_SET_RET(ctx, arg, TIMEIGN, BASH_KEY_INSTR);
+      }
+      <INITIAL> "((" [^)\x00]* "))" {
+          YYSETSTATE(-1);
+          if (ctx->last_read_token == TOK_FOR)
+              KEYNAME_SET_RET_WO_CHECK(ctx, arg, ARITH_FOR_EXPRS, BASH_KEY_INSTR);
+          detect_buf_deinit(&ctx->lexer.buf);
+          RET(ctx, TOK_ERROR);
+      }
       <INITIAL> self {
           arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
           arg->data.value.len = 1;
@@ -309,6 +538,10 @@ return_word:
       <INITIAL> whitespace {
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto bash_INITIAL;
+      }
+      <INITIAL> "{"[_a-zA-Z][_a-zA-Z0-9]*"}"/[<>] {
+          YYSETSTATE(-1);
+          KEYNAME_SET_RET_WO_CHECK(ctx, arg, REDIR_WORD, 0);
       }
       <INITIAL> word {
           detect_buf_init(&ctx->lexer.buf, 32, 1024);
