@@ -93,7 +93,7 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
-        | TOK_START_DATA expr post_exprs_opt ','[u1] data_cont {
+        | TOK_START_DATA data_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
         ;
@@ -146,10 +146,14 @@ data_name:  data
         /* Tokens-as-identifiers here */
         ;
 
+expr_cont:
+        | expr after_exp_cont_op_noexpr after_exp_cont
+        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        ;
+
 data_cont:
-        | expr post_exprs_opt after_exp_cont_op_noexpr after_exp_cont
-        | expr post_exprs_opt where_opt after_exp_cont_op_noexpr after_exp_cont
-        | after_exp_cont
+        | data_expr after_exp_cont_op_noexpr after_exp_cont
+        | data_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -306,13 +310,11 @@ expr_common:
         ;
 
 op_expr:  expr_common
-        | '('[tk] select ')'[u1] expr {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
+        | op_expr important_operator expr {
+            sqli_store_data(ctx, &$important_operator);
         }
-        | '('[tk] expr ')'[u1] expr {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
+        | op_expr operator expr {
+            YYUSE($operator);
         }
         | op_expr post_exprs
         ;
@@ -336,10 +338,6 @@ post_expr:
 post_exprs:
           post_expr
         | post_exprs post_expr
-        ;
-
-post_exprs_opt:
-        | post_exprs
         ;
 
 func_name:  colref_exact
@@ -411,9 +409,19 @@ func:     func_name func_args {
         }
         ;
 
-expr:   expr_common
-        | colref_exact
+data_expr: colref_exact
         | colref_asterisk
+        | data_expr important_operator expr {
+            sqli_store_data(ctx, &$important_operator);
+        }
+        | data_expr operator expr {
+            YYUSE($operator);
+        }
+        | data_expr post_exprs
+        ;
+
+expr:     expr_common
+        | data_expr
         | expr important_operator expr {
             sqli_store_data(ctx, &$important_operator);
         }
@@ -1054,6 +1062,8 @@ after_exp_cont:
 
 start_rce_cont: close_multiple_parens_opt semicolons_opt multiple_sqls
         | close_multiple_parens_opt op_expr after_exp_cont
+        | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
+        | op_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 %%
