@@ -93,7 +93,7 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
-        | TOK_START_DATA expr post_exprs_opt ','[u1] data_cont {
+        | TOK_START_DATA expr ','[u1] data_cont {
             YYUSE($u1);
         }
         ;
@@ -147,8 +147,8 @@ data_name:  data
         ;
 
 data_cont:
-        | expr post_exprs_opt after_exp_cont_op_noexpr after_exp_cont
-        | expr post_exprs_opt where_opt after_exp_cont_op_noexpr after_exp_cont
+        | expr after_exp_cont_op_noexpr after_exp_cont
+        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -335,10 +335,6 @@ post_expr:
 post_exprs:
           post_expr
         | post_exprs post_expr
-        ;
-
-post_exprs_opt:
-        | post_exprs
         ;
 
 func_name:  colref_exact
