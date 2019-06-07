@@ -305,13 +305,11 @@ expr_common:
         ;
 
 op_expr:  expr_common
-        | '('[tk] select ')'[u1] expr {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
+        | op_expr important_operator expr {
+            sqli_store_data(ctx, &$important_operator);
         }
-        | '('[tk] expr ')'[u1] expr {
-            sqli_store_data(ctx, &$tk);
-            YYUSE($u1);
+        | op_expr operator expr {
+            YYUSE($operator);
         }
         | op_expr post_exprs
         ;
