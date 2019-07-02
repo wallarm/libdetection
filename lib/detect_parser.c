@@ -55,6 +55,7 @@ detect_parser_init(void)
 
     TRYLOAD(rc, detect_parser_sqli);
     TRYLOAD(rc, detect_parser_pt);
+    TRYLOAD(rc, detect_parser_bash);
   done:
     if (rc) {
         detect_parser_deinit();

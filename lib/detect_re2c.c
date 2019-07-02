@@ -131,7 +131,7 @@ detect_re2c_update_tmp_data(
     if (shift) {
         memmove(ctx->tmp_data, ctx->start, tmp_data_size);
         ctx->start = ctx->tmp_data;
-        ctx->tmp_data_siz = tmp_data_size;
+        ctx->tmp_data_siz -= shift;
         ctx->pos -= shift;
         ctx->marker -= shift;
         ctx->ctxmarker -= shift;

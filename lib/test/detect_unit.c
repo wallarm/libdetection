@@ -14,6 +14,9 @@
 #define s_sqli_attacks(...) s_type_checks_("sqli", true, __VA_ARGS__)
 #define s_sqli_not_attacks(...) s_type_checks_("sqli", false, __VA_ARGS__)
 
+#define s_bash_attacks(...) s_type_checks_("bash", true, __VA_ARGS__)
+#define s_bash_not_attacks(...) s_type_checks_("bash", false, __VA_ARGS__)
+
 static void
 s_type_checks(
     const char *typename,
@@ -508,6 +511,142 @@ Tsqli_data_name(void)
     );
 }
 
+static void
+Tbash_simplest(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("ls -a")},
+        {CSTR_LEN("l\"s\" -a")},
+        {CSTR_LEN("l's' -a")},
+        {CSTR_LEN("l\\s -a")},
+        {CSTR_LEN("VAR=VAL ls")},
+        {CSTR_LEN("VAR=VAL l$1s")},
+        {CSTR_LEN("VAR=VAL l$name's'")},
+        {CSTR_LEN("VAR=VAL l${name}s")},
+    );
+}
+
+static void
+Tbash_comment(void)
+{
+    s_bash_not_attacks(
+        {CSTR_LEN("#ls -a")},
+    );
+}
+
+static void
+Tbash_simplelist(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("ls;ls")},
+        {CSTR_LEN("ls&ls")},
+        {CSTR_LEN("ls&&ls")},
+        {CSTR_LEN("ls|ls")},
+        {CSTR_LEN("ls|&ls")},
+        {CSTR_LEN("ls||ls")},
+        {CSTR_LEN("ls|")},
+        {CSTR_LEN("time -p -- ls|ls")},
+        {CSTR_LEN("! ls|ls")},
+    );
+}
+
+static void
+Tbash_commands(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("for test do echo i; done")},
+        {CSTR_LEN("for test; { echo i; }")},
+        {CSTR_LEN("for i in {1..5}; do echo i; done")},
+        {CSTR_LEN("for i in {1..5}; { echo i; }")},
+        {CSTR_LEN("for ((i=1; i<=10; ++i)) ; do echo $i ; done")},
+        {CSTR_LEN("for ((i=1; i<=10; ++i)) ; { echo $i ; }")},
+        {CSTR_LEN("select name do ls ; done")},
+        {CSTR_LEN("select name; do ls ; done")},
+        {CSTR_LEN("select name; { ls ; }")},
+        {CSTR_LEN("case 1 in 1) echo one;; 2) echo two;; esac")},
+        {CSTR_LEN("function a () { ( echo aaahh; ) }; a")},
+        {CSTR_LEN("coproc tee")},
+        {CSTR_LEN("if [ 1 -eq 2 ];  then echo equal ; else echo 'not equal' ; fi")},
+        {CSTR_LEN("(ls -a)")},
+        {CSTR_LEN("{ ls -a; }")},
+    );
+}
+
+static void
+Tbash_redirection(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("ls > file")},
+        {CSTR_LEN("ls > file")},
+        {CSTR_LEN("ls < file")},
+        {CSTR_LEN("ls 1> file")},
+        {CSTR_LEN("ls 2< file")},
+        {CSTR_LEN("ls {a}> file")},
+        {CSTR_LEN("ls {a}< file")},
+        {CSTR_LEN("ls >> file")},
+        {CSTR_LEN("ls 1>> file")},
+        {CSTR_LEN("ls {a}>> file")},
+        {CSTR_LEN("ls >| file")},
+        {CSTR_LEN("ls 1>| file")},
+        {CSTR_LEN("ls {a}>| file")},
+        {CSTR_LEN("ls <> file")},
+        {CSTR_LEN("ls 3<> file")},
+        {CSTR_LEN("ls {a}<> file")},
+        {CSTR_LEN("ls << file")},
+        {CSTR_LEN("ls 2<< file")},
+        {CSTR_LEN("ls {a}<< file")},
+        {CSTR_LEN("ls <<- file")},
+        {CSTR_LEN("ls 2<<- file")},
+        {CSTR_LEN("ls {a}<<- file")},
+        {CSTR_LEN("ls <<< file")},
+        {CSTR_LEN("ls <& 1")},
+        {CSTR_LEN("ls 2<& 1")},
+        {CSTR_LEN("ls {a}<& 1")},
+        {CSTR_LEN("ls >& 1")},
+        {CSTR_LEN("ls 2>& 1")},
+        {CSTR_LEN("ls {a}>& 1")},
+        {CSTR_LEN("ls <& file")},
+        {CSTR_LEN("ls 2<& file")},
+        {CSTR_LEN("ls {a}<& file")},
+        {CSTR_LEN("ls >& file")},
+        {CSTR_LEN("ls 2>& file")},
+        {CSTR_LEN("ls {a}>& file")},
+        {CSTR_LEN("ls <& -")},
+        {CSTR_LEN("ls 2<& -")},
+        {CSTR_LEN("ls {a}<& -")},
+        {CSTR_LEN("ls >& -")},
+        {CSTR_LEN("ls 2>& -")},
+        {CSTR_LEN("ls {a}>& -")},
+        {CSTR_LEN("ls &> file")},
+        {CSTR_LEN("ls 2&> file")},
+        {CSTR_LEN("ls {a}&> file")},
+    );
+}
+
+static void
+Tbash_inj(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("\nls")},
+        {CSTR_LEN("\r\nls")},
+        {CSTR_LEN(";ls")},
+        {CSTR_LEN("|ls")},
+        {CSTR_LEN("||ls")},
+        {CSTR_LEN("&ls")},
+        {CSTR_LEN("&&ls")},
+    );
+}
+
+static void
+Tbash_substitute(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("e$(FOO='BAR BAR BAR' echo ch)o test")},
+        {CSTR_LEN("foo <(FOO='BAR BAR BAR' ls)")},
+        {CSTR_LEN("foo >(FOO='BAR BAR BAR' last)")},
+    );
+}
+
 int
 main(void)
 {
@@ -572,9 +711,21 @@ main(void)
         {"data_name", Tsqli_data_name},
         CU_TEST_INFO_NULL
     };
+    CU_TestInfo bash_tests[] = {
+        {"simplest", Tbash_simplest},
+        {"comment", Tbash_comment},
+        {"simplelist", Tbash_simplelist},
+        {"commands", Tbash_commands},
+        {"redirection", Tbash_redirection},
+        {"inj", Tbash_inj},
+        {"substitute", Tbash_substitute},
+        CU_TEST_INFO_NULL
+    };
     CU_SuiteInfo suites[] = {
         {.pName = "generic", .pTests = generic_tests},
         {.pName = "sqli", .pTests = sqli_tests,
+         .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
+        {.pName = "bash", .pTests = bash_tests,
          .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
         CU_SUITE_INFO_NULL,
     };
