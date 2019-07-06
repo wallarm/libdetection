@@ -1,6 +1,7 @@
 #include <CUnit/Basic.h>
 #include <detect/detect.h>
 #include <stdlib.h>
+#include "../bash/bash_test.h"
 
 #define STR_LEN_ARGS(str) str, sizeof(str) - 1
 
@@ -512,6 +513,12 @@ Tsqli_data_name(void)
 }
 
 static void
+Tbash_constraints(void)
+{
+    CU_ASSERT_EQUAL(bash_lexer_test(), 0);
+}
+
+static void
 Tbash_simplest(void)
 {
     s_bash_attacks(
@@ -712,6 +719,7 @@ main(void)
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
+        {"constraints", Tbash_constraints},
         {"simplest", Tbash_simplest},
         {"comment", Tbash_comment},
         {"simplelist", Tbash_simplelist},

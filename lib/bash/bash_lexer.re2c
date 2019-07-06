@@ -1,7 +1,11 @@
 #define _GNU_SOURCE
 #include "bash.h"
 #include "bash_lexer.h"
+#include "bash_test.h"
 #include <string.h>
+#include <stdio.h>
+#include <wallarm/utils.h>
+#include <wallarm/bsearch.h>
 
 /*!max:re2c */
 
@@ -14,6 +18,335 @@ static const unsigned char selfsyms[] = {
     SSYM('>'), SSYM('<'), SSYM('-'), SSYM('{'), SSYM('}'), SSYM(';'), SSYM('('),
     SSYM(')'), SSYM('|'), SSYM('&'), SSYM('\n'), SSYM('\r')
 };
+
+static const struct detect_str bash_lexer_cmds[] = {
+    DETECT_CSTR("."),
+    DETECT_CSTR("7z"),
+    DETECT_CSTR("7za"),
+    DETECT_CSTR("7zr"),
+    DETECT_CSTR("adduser"),
+    DETECT_CSTR("alias"),
+    DETECT_CSTR("apt-get"),
+    DETECT_CSTR("arch"),
+    DETECT_CSTR("arp"),
+    DETECT_CSTR("bash"),
+    DETECT_CSTR("batch"),
+    DETECT_CSTR("breaksw"),
+    DETECT_CSTR("bsdcat"),
+    DETECT_CSTR("bsdiff"),
+    DETECT_CSTR("bsdtar"),
+    DETECT_CSTR("builtin"),
+    DETECT_CSTR("bzcat"),
+    DETECT_CSTR("bzdiff"),
+    DETECT_CSTR("bzegrep"),
+    DETECT_CSTR("bzfgrep"),
+    DETECT_CSTR("bzgrep"),
+    DETECT_CSTR("bzip2"),
+    DETECT_CSTR("bzless"),
+    DETECT_CSTR("bzmore"),
+    DETECT_CSTR("cat"),
+    DETECT_CSTR("cc"),
+    DETECT_CSTR("chattr"),
+    DETECT_CSTR("chdir"),
+    DETECT_CSTR("chflags"),
+    DETECT_CSTR("chmod"),
+    DETECT_CSTR("command"),
+    DETECT_CSTR("compress"),
+    DETECT_CSTR("cp"),
+    DETECT_CSTR("crontab"),
+    DETECT_CSTR("csh"),
+    DETECT_CSTR("curl"),
+    DETECT_CSTR("dash"),
+    DETECT_CSTR("dhclient"),
+    DETECT_CSTR("diff"),
+    DETECT_CSTR("dmesg"),
+    DETECT_CSTR("doas"),
+    DETECT_CSTR("dpkg"),
+    DETECT_CSTR("du"),
+    DETECT_CSTR("echo"),
+    DETECT_CSTR("egrep"),
+    DETECT_CSTR("endsw"),
+    DETECT_CSTR("env"),
+    DETECT_CSTR("env-update"),
+    DETECT_CSTR("eval"),
+    DETECT_CSTR("exec"),
+    DETECT_CSTR("exit"),
+    DETECT_CSTR("expand"),
+    DETECT_CSTR("export"),
+    DETECT_CSTR("expr"),
+    DETECT_CSTR("false"),
+    DETECT_CSTR("fc"),
+    DETECT_CSTR("fetch"),
+    DETECT_CSTR("fgrep"),
+    DETECT_CSTR("file"),
+    DETECT_CSTR("filetest"),
+    DETECT_CSTR("find"),
+    DETECT_CSTR("foreach"),
+    DETECT_CSTR("ftp"),
+    DETECT_CSTR("ftpstats"),
+    DETECT_CSTR("ftpwho"),
+    DETECT_CSTR("gcc"),
+    DETECT_CSTR("gdb"),
+    DETECT_CSTR("git"),
+    DETECT_CSTR("grep"),
+    DETECT_CSTR("gunzip"),
+    DETECT_CSTR("gzcat"),
+    DETECT_CSTR("gzip"),
+    DETECT_CSTR("head"),
+    DETECT_CSTR("history"),
+    DETECT_CSTR("hostid"),
+    DETECT_CSTR("hostname"),
+    DETECT_CSTR("htdigest"),
+    DETECT_CSTR("htpasswd"),
+    DETECT_CSTR("hup"),
+    DETECT_CSTR("id"),
+    DETECT_CSTR("ifconfig"),
+    DETECT_CSTR("ip6tables"),
+    DETECT_CSTR("ipconfig"),
+    DETECT_CSTR("iptables"),
+    DETECT_CSTR("irb"),
+    DETECT_CSTR("irb1"),
+    DETECT_CSTR("irb18"),
+    DETECT_CSTR("irb19"),
+    DETECT_CSTR("irb20"),
+    DETECT_CSTR("irb21"),
+    DETECT_CSTR("irb22"),
+    DETECT_CSTR("java"),
+    DETECT_CSTR("jexec"),
+    DETECT_CSTR("jobs"),
+    DETECT_CSTR("kill"),
+    DETECT_CSTR("killall"),
+    DETECT_CSTR("last"),
+    DETECT_CSTR("lastcomm"),
+    DETECT_CSTR("lastlog"),
+    DETECT_CSTR("lastlogin"),
+    DETECT_CSTR("less"),
+    DETECT_CSTR("lessecho"),
+    DETECT_CSTR("lessfile"),
+    DETECT_CSTR("lesspipe"),
+    DETECT_CSTR("lftp"),
+    DETECT_CSTR("lftpget"),
+    DETECT_CSTR("local"),
+    DETECT_CSTR("locate"),
+    DETECT_CSTR("logname"),
+    DETECT_CSTR("lp"),
+    DETECT_CSTR("ls"),
+    DETECT_CSTR("ls-F"),
+    DETECT_CSTR("lsb_release"),
+    DETECT_CSTR("lscpu"),
+    DETECT_CSTR("lsmod"),
+    DETECT_CSTR("lsof"),
+    DETECT_CSTR("lspci"),
+    DETECT_CSTR("lsusb"),
+    DETECT_CSTR("lwp-download"),
+    DETECT_CSTR("lwp-dump"),
+    DETECT_CSTR("lwp-mirror"),
+    DETECT_CSTR("lwp-request"),
+    DETECT_CSTR("lynx"),
+    DETECT_CSTR("lzcat"),
+    DETECT_CSTR("lzcmp"),
+    DETECT_CSTR("lzdiff"),
+    DETECT_CSTR("lzegrep"),
+    DETECT_CSTR("lzfgrep"),
+    DETECT_CSTR("lzgrep"),
+    DETECT_CSTR("lzless"),
+    DETECT_CSTR("lzma"),
+    DETECT_CSTR("lzmore"),
+    DETECT_CSTR("mailq"),
+    DETECT_CSTR("mkdir"),
+    DETECT_CSTR("mlocate"),
+    DETECT_CSTR("more"),
+    DETECT_CSTR("mount"),
+    DETECT_CSTR("mv"),
+    DETECT_CSTR("mysql"),
+    DETECT_CSTR("mysqladmin"),
+    DETECT_CSTR("mysqldump"),
+    DETECT_CSTR("mysqldumpslow"),
+    DETECT_CSTR("mysqlhotcopy"),
+    DETECT_CSTR("mysqlshow"),
+    DETECT_CSTR("nano"),
+    DETECT_CSTR("nc"),
+    DETECT_CSTR("nc.openbsd"),
+    DETECT_CSTR("nc.traditional"),
+    DETECT_CSTR("ncat"),
+    DETECT_CSTR("net"),
+    DETECT_CSTR("netcat"),
+    DETECT_CSTR("netkit-ftp"),
+    DETECT_CSTR("netstat"),
+    DETECT_CSTR("nice"),
+    DETECT_CSTR("nmap"),
+    DETECT_CSTR("nohup"),
+    DETECT_CSTR("nping"),
+    DETECT_CSTR("nslookup"),
+    DETECT_CSTR("nstat"),
+    DETECT_CSTR("onintr"),
+    DETECT_CSTR("openssl"),
+    DETECT_CSTR("passwd"),
+    DETECT_CSTR("perl"),
+    DETECT_CSTR("perl5"),
+    DETECT_CSTR("perlsh"),
+    DETECT_CSTR("perms"),
+    DETECT_CSTR("pftp"),
+    DETECT_CSTR("pgrep"),
+    DETECT_CSTR("php"),
+    DETECT_CSTR("php5"),
+    DETECT_CSTR("php7"),
+    DETECT_CSTR("ping"),
+    DETECT_CSTR("pkexec"),
+    DETECT_CSTR("pkg"),
+    DETECT_CSTR("pkg_info"),
+    DETECT_CSTR("pkginfo"),
+    DETECT_CSTR("pkill"),
+    DETECT_CSTR("popd"),
+    DETECT_CSTR("printenv"),
+    DETECT_CSTR("ps"),
+    DETECT_CSTR("ptar"),
+    DETECT_CSTR("ptardiff"),
+    DETECT_CSTR("ptargrep"),
+    DETECT_CSTR("pushd"),
+    DETECT_CSTR("python"),
+    DETECT_CSTR("python2"),
+    DETECT_CSTR("python3"),
+    DETECT_CSTR("python3m"),
+    DETECT_CSTR("rar"),
+    DETECT_CSTR("rcp"),
+    DETECT_CSTR("realpath"),
+    DETECT_CSTR("rename"),
+    DETECT_CSTR("repeat"),
+    DETECT_CSTR("replace"),
+    DETECT_CSTR("rm"),
+    DETECT_CSTR("rmdir"),
+    DETECT_CSTR("rmuser"),
+    DETECT_CSTR("rnano"),
+    DETECT_CSTR("route"),
+    DETECT_CSTR("rpm"),
+    DETECT_CSTR("rsync"),
+    DETECT_CSTR("ruby"),
+    DETECT_CSTR("ruby1"),
+    DETECT_CSTR("ruby18"),
+    DETECT_CSTR("ruby19"),
+    DETECT_CSTR("ruby20"),
+    DETECT_CSTR("ruby21"),
+    DETECT_CSTR("ruby22"),
+    DETECT_CSTR("sched"),
+    DETECT_CSTR("scp"),
+    DETECT_CSTR("sdiff"),
+    DETECT_CSTR("sed"),
+    DETECT_CSTR("sendmail"),
+    DETECT_CSTR("set"),
+    DETECT_CSTR("setenv"),
+    DETECT_CSTR("setsid"),
+    DETECT_CSTR("sftp"),
+    DETECT_CSTR("sh"),
+    DETECT_CSTR("sh.distrib"),
+    DETECT_CSTR("shutdown"),
+    DETECT_CSTR("sleep"),
+    DETECT_CSTR("socat"),
+    DETECT_CSTR("sort"),
+    DETECT_CSTR("source"),
+    DETECT_CSTR("ssh"),
+    DETECT_CSTR("strings"),
+    DETECT_CSTR("su"),
+    DETECT_CSTR("sudo"),
+    DETECT_CSTR("svn"),
+    DETECT_CSTR("sysctl"),
+    DETECT_CSTR("tail"),
+    DETECT_CSTR("tailf"),
+    DETECT_CSTR("tar"),
+    DETECT_CSTR("tcping"),
+    DETECT_CSTR("tcptraceroute"),
+    DETECT_CSTR("tcsh"),
+    DETECT_CSTR("tee"),
+    DETECT_CSTR("telnet"),
+    DETECT_CSTR("time"),
+    DETECT_CSTR("timeout"),
+    DETECT_CSTR("top"),
+    DETECT_CSTR("touch"),
+    DETECT_CSTR("traceroute"),
+    DETECT_CSTR("traceroute6"),
+    DETECT_CSTR("uname"),
+    DETECT_CSTR("uncompress"),
+    DETECT_CSTR("unlzma"),
+    DETECT_CSTR("unrar"),
+    DETECT_CSTR("unset"),
+    DETECT_CSTR("unxz"),
+    DETECT_CSTR("unzip"),
+    DETECT_CSTR("useradd"),
+    DETECT_CSTR("userdel"),
+    DETECT_CSTR("usermod"),
+    DETECT_CSTR("vigr"),
+    DETECT_CSTR("vim"),
+    DETECT_CSTR("vipw"),
+    DETECT_CSTR("w3m"),
+    DETECT_CSTR("wget"),
+    DETECT_CSTR("who"),
+    DETECT_CSTR("whoami"),
+    DETECT_CSTR("xargs"),
+    DETECT_CSTR("xterm"),
+    DETECT_CSTR("xz"),
+    DETECT_CSTR("xzcat"),
+    DETECT_CSTR("xzcmp"),
+    DETECT_CSTR("xzdec"),
+    DETECT_CSTR("xzdiff"),
+    DETECT_CSTR("xzegrep"),
+    DETECT_CSTR("xzfgrep"),
+    DETECT_CSTR("xzgrep"),
+    DETECT_CSTR("xzless"),
+    DETECT_CSTR("xzmore"),
+    DETECT_CSTR("yum"),
+    DETECT_CSTR("zcat"),
+    DETECT_CSTR("zcmp"),
+    DETECT_CSTR("zdiff"),
+    DETECT_CSTR("zegrep"),
+    DETECT_CSTR("zfgrep"),
+    DETECT_CSTR("zgrep"),
+    DETECT_CSTR("zip"),
+    DETECT_CSTR("zless"),
+    DETECT_CSTR("zmore"),
+    DETECT_CSTR("zrun"),
+    DETECT_CSTR("zsh"),
+};
+
+static int
+bash_lexer_cmd_cmp(const struct detect_str *cmd, const char *name, size_t len)
+{
+    size_t min_len = cmd->len > len ? len : cmd->len;
+    int rv;
+
+    if ((rv = memcmp(cmd->str, name, min_len)) != 0)
+        return (rv);
+    if (cmd->len > len)
+        return (1);
+    if (cmd->len < len)
+        return (-1);
+    return (0);
+}
+
+static ssize_t
+bash_lexer_cmd_find(const char *name, size_t len)
+{
+    size_t idx;
+
+    if (!WALLARM_BSEARCH(&idx, bash_lexer_cmds, W_ARRAY_SIZE(bash_lexer_cmds),
+                         bash_lexer_cmd_cmp(wbsearch_elm, name, len)))
+        return (-1);
+    return (idx);
+}
+
+int
+bash_lexer_test(void)
+{
+    for (size_t i = 1; i != W_ARRAY_SIZE(bash_lexer_cmds); i++) {
+        const struct detect_str *s1 = &bash_lexer_cmds[i - 1];
+        const struct detect_str *s2 = &bash_lexer_cmds[i];
+
+        if (bash_lexer_cmd_cmp(s1, s2->str, s2->len) >= 0) {
+            fprintf(stderr, "%s >= %s\n", s1->str, s2->str);
+            return (-1);
+        }
+    }
+    return (0);
+}
 
 static int
 keyname_acceptable(struct bash_detect_ctx *ctx)
@@ -260,43 +593,6 @@ bash_get_token(
 
 return_word:
           {
-              char *cmds[] = { "7z", "7za", "7zr", "adduser", "alias",
-"apt-get", "arch", "arp", "bash", "batch", "breaksw", "bsdcat", "bsdiff",
-"bsdtar", "builtin", "bzcat", "bzdiff", "bzegrep", "bzfgrep", "bzgrep", "bzip2",
-"bzless", "bzmore", "cat", "cc", "chattr", "chdir", "chflags", "chmod",
-"command", "compress", "cp", "crontab", "csh", "curl", "dash", "dhclient",
-"diff", "dmesg", "doas", "dpkg", "du", "echo", "egrep", "endsw", "env", "false",
-"env-update", "eval", "exec", "exit", "expand", "export", "expr", "fc", "fetch",
-"fgrep", "file", "filetest", "find", "foreach", "ftp" , "ftpstats", "ftpwho",
-"gcc", "gdb", "git", "grep", "gunzip", "gzcat", "gzip", "head", "history",
-"hostid", "hostname", "htdigest", "htpasswd", "hup", "id", "ifconfig",
-"ip6tables", "ipconfig", "iptables", "irb", "irb1", "irb18", "irb19", "irb20",
-"irb21", "irb22", "java", "jexec", "jobs", "kill", "killall", "last",
-"lastcomm", "lastlog", "lastlogin", "less", "lessecho", "lessfile", "lesspipe",
-"lftp", "lftpget", "local", "locate", "logname", "lp", "ls", "ls-F",
-"lsb_release", "lscpu", "lsmod", "lsof", "lspci", "lsusb", "lwp-download",
-"lwp-dump", "lwp-mirror", "lwp-request", "lynx", "lzcat", "lzcmp", "lzdiff",
-"lzegrep", "lzfgrep", "lzgrep", "lzless", "lzma", "lzmore", "mailq", "mkdir",
-"mlocate", "more", "mount", "mv", "mysql", "mysqladmin", "mysqldump",
-"mysqldumpslow", "mysqlhotcopy", "mysqlshow", "nano", "nc", "nc.openbsd",
-"nc.traditional", "ncat", "net", "netcat", "netkit-ftp", "netstat", "nice",
-"nmap", "nohup", "nping", "nslookup", "nstat", "onintr", "openssl", "passwd",
-"perl", "perl5", "perlsh", "perms", "pftp", "pgrep", "php", "php5", "php7",
-"ping", "pkexec", "pkg", "pkg_info", "pkginfo", "pkill", "popd", "printenv",
-"ps", "ptar", "ptardiff", "ptargrep", "pushd", "python", "python2", "python3",
-"python3m", "rar", "rcp", "realpath", "rename", "repeat", "replace", "rm",
-"rmdir", "rmuser", "rnano", "route", "rpm", "rsync", "ruby", "ruby1", "ruby18",
-"ruby19", "ruby20", "ruby21", "ruby22", "sched", "scp", "sdiff", "sed",
-"sendmail", "set", "setenv", "setsid", "sftp", "sh", "sh.distrib", "shutdown",
-"sleep", "socat", "sort", "source", "ssh", "strings", "su", "sudo", "svn",
-"sysctl", "tail", "tailf", "tar", "tcping", "tcptraceroute", "tcsh", "tee",
-"telnet", "time", "timeout", "top", "touch", "traceroute", "traceroute6",
-"uname", "uncompress", "unlzma", "unrar", "unset", "unxz", "unzip", "useradd",
-"userdel", "usermod", "vigr", "vim", "vipw", "w3m", "wget", "who", "whoami",
-"xargs", "xterm", "xz", "xzcat", "xzcmp", "xzdec", "xzdiff", "xzegrep",
-"xzfgrep", "xzgrep", "xzless", "xzmore", "yum", "zcat", "zcmp", "zdiff",
-"zegrep", "zfgrep", "zgrep", "zip", "zless", "zmore", "zrun", "zsh", ".", NULL };
-
               if (memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len)) {
                   detect_buf_deinit(&ctx->lexer.buf);
                   KEYNAME_SET_RET_WO_CHECK(ctx, arg, ASSIGNMENT_WORD, 0);
@@ -309,22 +605,22 @@ return_word:
                   else
                       ++pch;
                   int len = ctx->lexer.buf.data.len - (pch - ctx->lexer.buf.data.str);
-                  for (char **pcmd = cmds; *pcmd; ++pcmd) {
-                      if (len == strlen(*pcmd) && !strncmp(pch, *pcmd, len)) {
-                          detect_buf_deinit(&ctx->lexer.buf);
-                          KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
-                      }
+                  ssize_t idx = bash_lexer_cmd_find(pch, len);
+
+                  if (idx >= 0) {
+                      detect_buf_deinit(&ctx->lexer.buf);
+                      KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
                   }
               }
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str &&
                   ctx->lexer.buf.data.len > 2 && *ctx->lexer.buf.data.str == '$') {
                   char *pch = ctx->lexer.buf.data.str + 1;
                   int len = ctx->lexer.buf.data.len - 1;
-                  for (char **pcmd = cmds; *pcmd; ++pcmd) {
-                      if (len == strlen(*pcmd) && !strncmp(pch, *pcmd, len)) {
-                          detect_buf_deinit(&ctx->lexer.buf);
-                          KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
-                      }
+                  ssize_t idx = bash_lexer_cmd_find(pch, len);
+
+                  if (idx >= 0) {
+                      detect_buf_deinit(&ctx->lexer.buf);
+                      KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
                   }
               }
 
