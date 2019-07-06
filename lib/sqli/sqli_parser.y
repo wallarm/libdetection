@@ -264,7 +264,7 @@ expr_common:
             sqli_store_data(ctx, &$important_operator);
         }
         | operator expr {
-            YYUSE($operator);
+            sqli_token_data_destructor(&$operator);
         }
         | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
@@ -314,7 +314,7 @@ op_expr:  expr_common
             sqli_store_data(ctx, &$important_operator);
         }
         | op_expr operator expr {
-            YYUSE($operator);
+            sqli_token_data_destructor(&$operator);
         }
         | op_expr post_exprs
         ;
@@ -415,7 +415,7 @@ data_expr: colref_exact
             sqli_store_data(ctx, &$important_operator);
         }
         | data_expr operator expr {
-            YYUSE($operator);
+            sqli_token_data_destructor(&$operator);
         }
         | data_expr post_exprs
         ;
@@ -426,7 +426,7 @@ expr:     expr_common
             sqli_store_data(ctx, &$important_operator);
         }
         | expr operator expr {
-            YYUSE($operator);
+            sqli_token_data_destructor(&$operator);
         }
         | expr post_exprs
         ;
