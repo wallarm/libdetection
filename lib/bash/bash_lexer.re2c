@@ -1,8 +1,7 @@
+#define _GNU_SOURCE
 #include "bash.h"
 #include "bash_lexer.h"
 #include <string.h>
-
-extern void *memrchr(const void *, int, size_t);
 
 /*!max:re2c */
 
