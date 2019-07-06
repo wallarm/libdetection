@@ -14,6 +14,7 @@ int detect_deinit(void);
 struct detect;
 
 #define CSTR_LEN(cstr) .str = cstr, .len = sizeof(cstr) - 1
+#define DETECT_CSTR(cstr) {CSTR_LEN(cstr)}
 struct detect_str {
     char *str;
     size_t len;
