@@ -9,7 +9,8 @@ BuildPackage(
         'trusty',
         'xenial',
         'bionic',
-        'stretch'
+        'stretch',
+        'buster'
     ],
     target_repos: [
         //wallarm: [ dev: true ],
