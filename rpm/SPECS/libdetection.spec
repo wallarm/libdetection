@@ -50,7 +50,7 @@ require attacks samples to learn.
 %setup -c
 
 %build
-./config -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} -DCMAKE_INSTALL_LIBDIR=%{_libdir}
+./config -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} -DCMAKE_INSTALL_LIBDIR=%{_libdir} -DENABLE_SHARED=1 -DENABLE_STATIC=1
 %{__make} -C build
 
 %install
@@ -61,6 +61,7 @@ require attacks samples to learn.
 
 %files devel
 %{_libdir}/*.so
+%{_libdir}/*.a
 %{_includedir}/detect/
 
 %files utils
