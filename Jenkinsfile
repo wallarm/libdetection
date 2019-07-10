@@ -13,8 +13,7 @@ BuildPackage(
         'buster'
     ],
     target_repos: [
-        //wallarm: [ dev: true ],
-        'wallarm-node': [ release: '2.13' ]
+        'wallarm-node': [ release: '2.13', dev: true ]
     ],
     notify: [
         email: 'node-dev@wallarm.com'
