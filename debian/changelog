@@ -1,3 +1,9 @@
+libdetection (1.2.0-1) stable; urgency=medium
+
+  * NODE-2044: Internal rebuild
+
+ -- Oleg Trifonov <otrifonov@wallarm.com>  Mon, 22 Jul 2019 10:05:31 +0000
+
 libdetection (1.1.0-2) stable; urgency=medium
 
   * NODE-1948: Internal rebuild
