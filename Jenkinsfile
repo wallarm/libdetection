@@ -14,10 +14,11 @@ BuildPackage(
         'stretch',
         'buster'
     ],
-    target_repos: [
-        'wallarm-node': [
-		release: '2.13',
+    repos: [
+        'wallarm': [
 		dev: true
+	],
+        'wallarm-node': [
 	]
     ],
     notify: [
