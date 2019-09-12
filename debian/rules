@@ -2,6 +2,9 @@
 
 export LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
 
+override_dh_strip:
+	dh_strip -X.a
+
 %:
 	dh $@
 

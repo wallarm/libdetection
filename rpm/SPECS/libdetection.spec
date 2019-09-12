@@ -35,6 +35,15 @@ Extendable library for detection syntaxes by formal notations. Can be used to
 detect injections and commanding attacks such as SQLi and others. Does not
 require attacks samples to learn.
 
+%package static
+Summary: Static libraries to detect attacks
+Group: Development/Libraries
+
+%description static
+Extendable library for detection syntaxes by formal notations. Can be used to
+detect injections and commanding attacks such as SQLi and others. Does not
+require attacks samples to learn.
+
 %package utils
 Summary: Utilities for signature-free approach library to detect attacks
 Group: Development/Tools
@@ -56,13 +65,21 @@ require attacks samples to learn.
 %install
 %{__make} -C build install DESTDIR=%{buildroot}
 
+%define __os_install_post \
+    /usr/lib/rpm/brp-compress; \
+    /usr/lib/rpm/brp-strip; \
+    /usr/lib/rpm/brp-strip-comment-note; \
+%{nil}
+
 %files
 %{_libdir}/*.so.*
 
 %files devel
 %{_libdir}/*.so
-%{_libdir}/*.a
 %{_includedir}/detect/
+
+%files static
+%{_libdir}/*.a
 
 %files utils
 %{_bindir}/libdetection_perf
