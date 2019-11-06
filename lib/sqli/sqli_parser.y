@@ -198,23 +198,23 @@ sql_parens: sql_no_parens
 
 colref_exact:
         data_name {
-            sqli_store_data(ctx, &$data_name);
+            sqli_token_data_destructor(&$data_name);
         }
         | data_name[tname] '.'[u1] data_name[colname] {
-            sqli_store_data(ctx, &$tname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$tname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
         }
         | data_name[dname] '.'[u1] data_name[tname] '.'[u2] data_name[colname] {
-            sqli_store_data(ctx, &$dname);
-            sqli_store_data(ctx, &$tname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$dname);
+            sqli_token_data_destructor(&$tname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
             YYUSE($u2);
         }
         | data_name[dname] '.'[u1] '.'[u2] data_name[colname] {
-            sqli_store_data(ctx, &$dname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$dname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
             YYUSE($u2);
         }
