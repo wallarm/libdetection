@@ -32,7 +32,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_STRING
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
-%token <data> TOK_DATA TOK_NAME TOK_OPERATOR
+%token <data> TOK_DATA TOK_NAME TOK_OPERATOR TOK_NUM
 %token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+'
 %token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
@@ -410,6 +410,9 @@ func:     func_name func_args
 noop_expr: expr_common
         | colref_exact
         | colref_asterisk
+        | TOK_NUM {
+            sqli_token_data_destructor(&$TOK_NUM);
+        }
         | noop_expr post_exprs
         ;
 
@@ -462,7 +465,7 @@ select_list: select_arg
         ;
 
 top_opt:
-        | TOK_TOP[tk] data_name[data] percent_opt {
+        | TOK_TOP[tk] TOK_NUM[data] percent_opt {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$data);
         }
@@ -780,7 +783,7 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] TOK_NUM[len] ')'[u2] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
@@ -793,7 +796,7 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] '='[u3] noop_expr {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] TOK_NUM[len] ')'[u2] '='[u3] noop_expr {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
@@ -863,7 +866,7 @@ delete_modifier_opt:
         }
         ;
 
-limit_op: TOK_LIMIT[tk] data_name[row_count] {
+limit_op: TOK_LIMIT[tk] TOK_NUM[row_count] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$row_count);
         }
