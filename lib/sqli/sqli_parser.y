@@ -128,6 +128,7 @@ data_name:  data
         |   TOK_NAME
         |   TOK_DATA2
         |   TOK_TABLE
+        |   TOK_BINARY
         | '['[u1] TOK_NAME[name] ']'[u2] {
             YYUSE($u1);
             $$ = $name;
@@ -272,6 +273,22 @@ expr_common:
         | '+'[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
         }
+        | TOK_NOT[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | TOK_BINARY[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | TOK_OUTFILE[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | TOK_MATCH[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | waitfor_delay
+        | TOK_AS[tk] colref_exact {
+            sqli_store_data(ctx, &$tk);
+        }
         | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
@@ -351,6 +368,7 @@ func_name:  colref_exact
         | TOK_DATABASE
         | TOK_IF
         | TOK_REPLACE
+        | TOK_LIKE
         ;
 
 expr_list:
@@ -422,33 +440,52 @@ operator: TOK_OPERATOR
         | '*'
         | '='
         | '.'
-        | ':'
+        | ':'[tk1] ':'[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         ;
 
 important_operator: TOK_OR
         | TOK_AND
-        | TOK_IS
-        | TOK_NOT
+        | TOK_NOT[tk1] TOK_IN[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_DIV
         | TOK_MOD
         | TOK_XOR
         | TOK_REGEXP
+        | TOK_NOT[tk1] TOK_REGEXP[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_BETWEEN
         | TOK_LIKE
+        | TOK_NOT[tk1] TOK_LIKE[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
+        | TOK_SOUNDS[tk1] TOK_LIKE[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_RLIKE
-        | TOK_WAITFOR
-        | TOK_DELAY
+        | TOK_NOT[tk1] TOK_RLIKE[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_IN
         | TOK_BINARY
         | TOK_SOUNDS
         | TOK_INTO
-        | TOK_OUTFILE
-        | TOK_MATCH
         | TOK_AGAINST
         | TOK_COLLATE
         | TOK_EXIST
-        | TOK_AS
         | TOK_UESCAPE
+        | TOK_USING
+        | TOK_AS
+        | TOK_IS
         ;
 
 select_distinct_opt:
