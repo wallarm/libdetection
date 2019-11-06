@@ -93,7 +93,7 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
-        | TOK_START_DATA data_expr ','[u1] expr_cont {
+        | TOK_START_DATA op_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
         ;
@@ -152,8 +152,8 @@ expr_cont:
         ;
 
 data_cont:
-        | data_expr after_exp_cont_op_noexpr after_exp_cont
-        | data_expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | op_expr after_exp_cont_op_noexpr after_exp_cont
+        | op_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -260,10 +260,10 @@ within_opt:
 
 expr_common:
           func over_opt within_opt
-        | important_operator expr {
+        | expr important_operator expr {
             sqli_store_data(ctx, &$important_operator);
         }
-        | operator expr {
+        | expr operator expr {
             sqli_token_data_destructor(&$operator);
         }
         | '('[tk] select ')'[u1] alias_opt {
@@ -309,11 +309,11 @@ expr_common:
         }
         ;
 
-op_expr:  expr_common
-        | op_expr important_operator expr {
+op_expr:  expr
+        | important_operator expr {
             sqli_store_data(ctx, &$important_operator);
         }
-        | op_expr operator expr {
+        | operator expr {
             sqli_token_data_destructor(&$operator);
         }
         | op_expr post_exprs
@@ -401,25 +401,10 @@ func_args:  '('[u1] func_distinct_opt ')'[u2] {
 func:     func_name func_args
         ;
 
-data_expr: colref_exact
-        | colref_asterisk
-        | data_expr important_operator expr {
-            sqli_store_data(ctx, &$important_operator);
-        }
-        | data_expr operator expr {
-            sqli_token_data_destructor(&$operator);
-        }
-        | data_expr post_exprs
-        ;
-
 expr:     expr_common
-        | data_expr
-        | expr important_operator expr {
-            sqli_store_data(ctx, &$important_operator);
-        }
-        | expr operator expr {
-            sqli_token_data_destructor(&$operator);
-        }
+        | data_name
+        | colref_exact
+        | colref_asterisk
         | expr post_exprs
         ;
 
@@ -1035,7 +1020,7 @@ after_exp_cont_op_noexpr:
         ;
 
 after_exp_cont_op:
-        expr after_exp_cont_op_noexpr
+        op_expr after_exp_cont_op_noexpr
         | where_opt after_exp_cont_op_noexpr
         ;
 
