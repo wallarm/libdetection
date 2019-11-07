@@ -359,7 +359,6 @@ expr_list_opt:
 func_args_list:
           expr
         | func_args_list ','[u1] expr {YYUSE($u1);}
-        | error
         ;
 
 func_args_modifier_tk:
