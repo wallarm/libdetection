@@ -270,16 +270,16 @@ expr_common:
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
-        | '('[tk] expr_list ')'[u1] {
-            sqli_store_data(ctx, &$tk);
+        | '('[u1] expr_list ')'[u2] {
             YYUSE($u1);
+            YYUSE($u2);
         }
         | '('[tk] error {
             sqli_store_data(ctx, &$tk);
         }
-        | '('[tk] error ')'[u1] {
-            sqli_store_data(ctx, &$tk);
+        | '('[u1] error ')'[u2] {
             YYUSE($u1);
+            YYUSE($u2);
         }
         | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
             sqli_store_data(ctx, &$tk1);
