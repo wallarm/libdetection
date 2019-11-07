@@ -13,7 +13,8 @@
 static const unsigned char selfsyms[] = {
     SSYM('.'), SSYM(','), SSYM('('), SSYM(')'),
     SSYM('*'), SSYM('['), SSYM(']'),
-    SSYM(';'), SSYM('='), SSYM(':'), SSYM('{'), SSYM('}'),
+    SSYM(';'), SSYM('='), SSYM(':'), SSYM('{'),
+    SSYM('}'), SSYM('-'), SSYM('+'),
 };
 
 int
@@ -361,6 +362,39 @@ sqli_get_token(
           arg->data.flags = SQLI_KEY_INSTR;
           arg->data.tok = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1];
           RET(ctx, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+      }
+      <MINUS> '-' {
+          assert(ctx->lexer.buf.data.len > 0);
+          ctx->lexer.buf.data.len--;
+          YYSETCONDITION(sqli_DASHCOMMENT);
+          YYSETSTATE(-1);
+          if (!ctx->lexer.buf.data.len) {
+              detect_buf_deinit(&ctx->lexer.buf);
+              goto sqli_DASHCOMMENT;
+          }
+          goto self_done;
+      }
+      <MINUS> [^] => INITIAL {
+          assert(ctx->lexer.buf.data.len != 0);
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          YYSETSTATE(-1);
+  self_done:
+          if (ctx->lexer.buf.data.len == 1) {
+              unsigned char prev = ctx->lexer.buf.data.str[0];
+
+              if (prev < sizeof(selfsyms) / sizeof(selfsyms[0]) &&
+                  selfsyms[prev] != 0) {
+
+                  detect_buf_deinit(&ctx->lexer.buf);
+
+                  arg->data.value.str = (char *)&selfsyms[prev];
+                  arg->data.value.len = 1;
+                  arg->data.flags = SQLI_KEY_INSTR;
+                  arg->data.tok = prev;
+                  RET(ctx, prev);
+              }
+          }
+          RET_DATA_EX(OPERATOR, ctx, arg, SQLI_KEY_INSTR);
       }
       <OPERATOR> opchar_nocomment {
   opchar_generic:
@@ -876,6 +910,11 @@ sqli_get_token(
           arg->data.flags = SQLI_KEY_INSTR;
           arg->data.tok = DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1];
           RET(ctx, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+      }
+      <INITIAL> '-' => MINUS {
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
+          detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
+          goto sqli_MINUS;
       }
       <INITIAL> [a-zA-Z_@$]|[\xC0-\xDF][\x80-\xBF] => VAR {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);
