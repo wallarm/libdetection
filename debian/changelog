@@ -1,3 +1,9 @@
+libdetection (1.2.0-3) stable; urgency=medium
+
+  * NODE-2552: Internal rebuild
+
+ -- Alexander Drozdov <adrozdov@wallarm.com>  Mon, 11 Nov 2019 11:49:26 +0300
+
 libdetection (1.2.0-2) stable; urgency=medium
 
   * Added: build for debian buster (Closes: NODE-1977)
