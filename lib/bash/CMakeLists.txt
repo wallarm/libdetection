@@ -19,12 +19,11 @@ if(RE2C_EXECUTABLE)
   endmacro()
 endif()
 
-bison_target(sqli sqli_parser.y
-  ${CMAKE_CURRENT_BINARY_DIR}/sqli_parser.c
-#  VERBOSE ${CMAKE_CURRENT_BINARY_DIR}/sqli_parser
+bison_target(bash bash_parser.y
+  ${CMAKE_CURRENT_BINARY_DIR}/bash_parser.c
 )
 
-re2c_file(sqli_lexer.re2c sqli_lexer.c sqli_lexer.h)
+re2c_file(bash_lexer.re2c bash_lexer.c bash_lexer.h)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -32,9 +31,9 @@ include_directories(
 )
 
 set (SOURCES
-  sqli.c
-  ${BISON_sqli_OUTPUT_SOURCE}
-  ${CMAKE_CURRENT_BINARY_DIR}/sqli_lexer.c
+  bash.c
+  ${BISON_bash_OUTPUT_SOURCE}
+  ${CMAKE_CURRENT_BINARY_DIR}/bash_lexer.c
 )
 
 add_library(${PARSER_TARGET} OBJECT ${SOURCES})

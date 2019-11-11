@@ -1,6 +1,7 @@
 find_package(LibWallarmMisc REQUIRED)
 
 set (TARGET "detection")
+set (TARGET_OBJ "${TARGET}_obj")
 set (TARGET_VERSION_MAJOR 1)
 set (TARGET_VERSION_MINOR 0)
 set (TARGET_VERSION_PATCH 0)
@@ -27,13 +28,17 @@ set (SOURCES
 set (PARSERS
   sqli
   pt
+  bash
 )
 
-set (PARSERS_TARGETS)
+add_library(${TARGET_OBJ} OBJECT ${SOURCES})
+set_target_properties(${TARGET_OBJ} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+set (OBJ_TARGETS $<TARGET_OBJECTS:${TARGET_OBJ}>)
 
 foreach (PARSER ${PARSERS})
   set (PARSER_TARGET "${TARGET}_${PARSER}")
-  set (PARSERS_TARGETS ${PARSERS_TARGETS} ${PARSER_TARGET})
+  set (OBJ_TARGETS ${OBJ_TARGETS} $<TARGET_OBJECTS:${PARSER_TARGET}>)
   add_subdirectory(${PARSER})
 endforeach()
 
@@ -52,16 +57,16 @@ endif()
 set (LIB_TARGETS ${STATIC_TARGET} ${SHARED_TARGET})
 
 if (ENABLE_SHARED)
-  add_library(${SHARED_TARGET} SHARED ${SOURCES})
-  target_link_libraries(${SHARED_TARGET} ${PARSERS_TARGETS} ${LIBDEPS})
+  add_library(${SHARED_TARGET} SHARED ${OBJ_TARGETS})
+  target_link_libraries(${SHARED_TARGET} ${LIBDEPS})
   set_target_properties(${SHARED_TARGET} PROPERTIES
     VERSION ${TARGET_VERSION_FULL}
     SOVERSION ${TARGET_VERSION}
   )
 endif()
 if (ENABLE_STATIC)
-  add_library(${STATIC_TARGET} STATIC ${SOURCES})
-  target_link_libraries(${STATIC_TARGET} ${PARSERS_TARGETS} ${LIBDEPS})
+  add_library(${STATIC_TARGET} STATIC ${OBJ_TARGETS})
+  target_link_libraries(${STATIC_TARGET} ${LIBDEPS})
   set_target_properties(${STATIC_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
 endif()
 install(TARGETS ${LIB_TARGETS}
