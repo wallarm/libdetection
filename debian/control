@@ -16,6 +16,15 @@ Description: Development files for library to detect attacks
  detect injections and commanding attacks such as SQLi and others. Does not
  require attacks samples to learn.
 
+Package: libdetection1-static
+Architecture: all
+Section: libs
+Depends: ${misc:Depends}
+Description: Static libraries to detect attacks
+ Extendable library for detection syntaxes by formal notations. Can be used to
+ detect injections and commanding attacks such as SQLi and others. Does not
+ require attacks samples to learn.
+
 Package: libdetection1-utils
 Section: utils
 Architecture: all
@@ -28,6 +37,7 @@ Description: Utilities for signature-free approach library to detect attacks
 
 Package: libdetection1
 Architecture: amd64
+Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Signature-free approach library to detect attacks
  Extendable library for detection syntaxes by formal notations. Can be used to
