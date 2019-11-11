@@ -398,14 +398,7 @@ func_args:  '('[u1] func_distinct_opt ')'[u2] {
         }
         ;
 
-func:     func_name func_args {
-            struct sqli_token_arg_data key = {
-                .value = {CSTR_LEN("FUNC")},
-                .flags = SQLI_KEY_INSTR,
-                .tok = TOK_FUNC,
-            };
-            sqli_store_data(ctx, &key);
-        }
+func:     func_name func_args
         ;
 
 data_expr: colref_exact
