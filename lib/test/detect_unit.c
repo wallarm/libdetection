@@ -110,7 +110,6 @@ Tsqli_union(void)
 static void
 Tsqli_operators(void)
 {
-#if 0
     s_sqli_attacks(
         {CSTR_LEN("1' RLIKE '.*'")},
         {CSTR_LEN("1 MOD 1")},
@@ -127,7 +126,6 @@ Tsqli_operators(void)
                   "'server')::html")},
         {CSTR_LEN("1 AND U&'pgsql evade' uescape '!'")},
     );
-#endif
 }
 
 static void
