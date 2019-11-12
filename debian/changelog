@@ -1,3 +1,9 @@
+libdetection (1.2.1-1) stable; urgency=medium
+
+  * NODE-2552: update version to force upgrade from Node 2.12 to Node 2.14
+
+ -- Alexander Drozdov <adrozdov@wallarm.com>  Tue, 12 Nov 2019 07:55:09 +0300
+
 libdetection (1.2.0-3) stable; urgency=medium
 
   * NODE-2552: Internal rebuild

@@ -1,6 +1,6 @@
 Name: libdetection1
-Version: 1.2.0
-Release: 3
+Version: 1.2.1
+Release: 1
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
@@ -88,6 +88,9 @@ require attacks samples to learn.
 %postun -p /sbin/ldconfig
 
 %changelog
+* Mon Nov 12 2019 Alexander Drozdov <adrozdov@wallarm.com> - 1.2.1-1
+- NODE-2552: update version to force upgrade from Node 2.12 to Node 2.14
+
 * Mon Nov 11 2019 Alexander Drozdov <adrozdov@wallarm.com> - 1.2.0-3
 - NODE-2552: Internal rebuild
 
