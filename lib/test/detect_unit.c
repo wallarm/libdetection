@@ -118,7 +118,7 @@ Tsqli_operators(void)
         {CSTR_LEN("1' + BINARY '1")},
         {CSTR_LEN("1' INTO OUTFILE '1")},
         {CSTR_LEN("1 AND 1 SOUNDS LIKE 1")},
-        {CSTR_LEN("1 MATCH(col) AGAINST('text')")},
+        {CSTR_LEN("1 + MATCH(col) AGAINST('text')")},
         {CSTR_LEN("1 AND EXIST(SELECT 1)")},
         {CSTR_LEN("1 AND xmlelement('user', "
                   "login || ':' || pass).getStringVal()")},
@@ -239,7 +239,7 @@ Tsqli_shutdown(void)
 static void
 Tsqli_into_outfile(void)
 {
-    s_sqli_attacks({CSTR_LEN("SELECT 1 FROM table_name INTO OUTFILE 1")});
+    s_sqli_attacks({CSTR_LEN("SELECT 1 FROM table_name INTO OUTFILE 'file'")});
 }
 
 static void
