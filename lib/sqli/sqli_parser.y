@@ -463,7 +463,6 @@ select_distinct_opt:
 
 select_arg:
           expr alias_opt
-        | error
         ;
 
 select_list: select_arg
@@ -482,8 +481,7 @@ top_opt:
         }
         ;
 
-select_args: select_distinct_opt
-        | select_distinct_opt top_opt '*'[key] {
+select_args: select_distinct_opt top_opt '*'[key] {
             sqli_store_data(ctx, &$key);
         }
         | select_distinct_opt top_opt select_list
