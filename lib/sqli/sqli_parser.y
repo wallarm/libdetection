@@ -624,9 +624,7 @@ select_extra_tk:
         ;
 
 select_extra:
-        select_extra_tk[tk] expr_list_opt {
-            sqli_store_data(ctx, &$tk);
-        }
+        select_extra_tk expr_list_opt
         ;
 
 select_extras: select_extra
