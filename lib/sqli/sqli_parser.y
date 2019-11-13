@@ -275,7 +275,7 @@ expr_common:
             YYUSE($u2);
         }
         | '('[tk] error {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
         | '('[u1] error ')'[u2] {
             YYUSE($u1);
