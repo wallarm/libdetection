@@ -180,7 +180,7 @@ Tsqli_left_func(void)
 static void
 Tsqli_func(void)
 {
-    s_sqli_attacks({CSTR_LEN("1; DBMS_LOCK.SLEEP()")});
+    s_sqli_not_attacks({CSTR_LEN("1; DBMS_LOCK.SLEEP()")});
 }
 
 static void

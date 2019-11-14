@@ -198,23 +198,23 @@ sql_parens: sql_no_parens
 
 colref_exact:
         data_name {
-            sqli_store_data(ctx, &$data_name);
+            sqli_token_data_destructor(&$data_name);
         }
         | data_name[tname] '.'[u1] data_name[colname] {
-            sqli_store_data(ctx, &$tname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$tname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
         }
         | data_name[dname] '.'[u1] data_name[tname] '.'[u2] data_name[colname] {
-            sqli_store_data(ctx, &$dname);
-            sqli_store_data(ctx, &$tname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$dname);
+            sqli_token_data_destructor(&$tname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
             YYUSE($u2);
         }
         | data_name[dname] '.'[u1] '.'[u2] data_name[colname] {
-            sqli_store_data(ctx, &$dname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$dname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
             YYUSE($u2);
         }
@@ -270,16 +270,16 @@ expr_common:
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
-        | '('[tk] expr_list ')'[u1] {
-            sqli_store_data(ctx, &$tk);
+        | '('[u1] expr_list ')'[u2] {
             YYUSE($u1);
+            YYUSE($u2);
         }
         | '('[tk] error {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
-        | '('[tk] error ')'[u1] {
-            sqli_store_data(ctx, &$tk);
+        | '('[u1] error ')'[u2] {
             YYUSE($u1);
+            YYUSE($u2);
         }
         | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
             sqli_store_data(ctx, &$tk1);
@@ -359,7 +359,6 @@ expr_list_opt:
 func_args_list:
           expr
         | func_args_list ','[u1] expr {YYUSE($u1);}
-        | error
         ;
 
 func_args_modifier_tk:
@@ -399,14 +398,7 @@ func_args:  '('[u1] func_distinct_opt ')'[u2] {
         }
         ;
 
-func:     func_name func_args {
-            struct sqli_token_arg_data key = {
-                .value = {CSTR_LEN("FUNC")},
-                .flags = SQLI_KEY_INSTR,
-                .tok = TOK_FUNC,
-            };
-            sqli_store_data(ctx, &key);
-        }
+func:     func_name func_args
         ;
 
 data_expr: colref_exact
@@ -471,7 +463,6 @@ select_distinct_opt:
 
 select_arg:
           expr alias_opt
-        | error
         ;
 
 select_list: select_arg
@@ -490,8 +481,7 @@ top_opt:
         }
         ;
 
-select_args: select_distinct_opt
-        | select_distinct_opt top_opt '*'[key] {
+select_args: select_distinct_opt top_opt '*'[key] {
             sqli_store_data(ctx, &$key);
         }
         | select_distinct_opt top_opt select_list
@@ -634,9 +624,7 @@ select_extra_tk:
         ;
 
 select_extra:
-        select_extra_tk[tk] expr_list_opt {
-            sqli_store_data(ctx, &$tk);
-        }
+        select_extra_tk expr_list_opt
         ;
 
 select_extras: select_extra
