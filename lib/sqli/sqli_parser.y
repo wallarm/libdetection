@@ -93,7 +93,7 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
-        | TOK_START_DATA op_expr ','[u1] expr_cont {
+        | TOK_START_DATA expr ','[u1] expr_cont {
             YYUSE($u1);
         }
         ;
@@ -138,7 +138,7 @@ data_name:  data
             $$ = $name;
             YYUSE($u2);
         }
-        | '{'[u1] TOK_NAME[name] expr '}'[u2] {
+        | '{'[u1] TOK_NAME[name] noop_expr '}'[u2] {
             YYUSE($u1);
             $$ = $name;
             YYUSE($u2);
@@ -147,13 +147,13 @@ data_name:  data
         ;
 
 expr_cont:
-        | expr after_exp_cont_op_noexpr after_exp_cont
-        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 data_cont:
-        | op_expr after_exp_cont_op_noexpr after_exp_cont
-        | op_expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | expr after_exp_cont_op_noexpr after_exp_cont
+        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -260,10 +260,10 @@ within_opt:
 
 expr_common:
           func over_opt within_opt
-        | expr important_operator expr {
+        | noop_expr important_operator noop_expr {
             sqli_store_data(ctx, &$important_operator);
         }
-        | expr operator expr {
+        | noop_expr operator noop_expr {
             sqli_token_data_destructor(&$operator);
         }
         | '('[tk] select ')'[u1] alias_opt {
@@ -281,26 +281,26 @@ expr_common:
             YYUSE($u1);
             YYUSE($u2);
         }
-        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+        | TOK_CASE[tk1] TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_END[tk4] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
         }
-        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+        | TOK_CASE[tk1] noop_expr TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_END[tk4] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
         }
-        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END[tk5] {
+        | TOK_CASE[tk1] TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_ELSE[tk4] noop_expr TOK_END[tk5] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
             sqli_store_data(ctx, &$tk5);
         }
-        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END [tk5] {
+        | TOK_CASE[tk1] noop_expr TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_ELSE[tk4] noop_expr TOK_END [tk5] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
@@ -309,14 +309,14 @@ expr_common:
         }
         ;
 
-op_expr:  expr
-        | important_operator expr {
+expr:     noop_expr
+        | important_operator noop_expr {
             sqli_store_data(ctx, &$important_operator);
         }
-        | operator expr {
+        | operator noop_expr {
             sqli_token_data_destructor(&$operator);
         }
-        | op_expr post_exprs
+        | expr post_exprs
         ;
 
 post_expr_tk:
@@ -348,8 +348,8 @@ func_name:  colref_exact
         ;
 
 expr_list:
-          expr
-        | expr_list ','[u1] expr {YYUSE($u1);}
+          noop_expr
+        | expr_list ','[u1] noop_expr {YYUSE($u1);}
         ;
 
 expr_list_opt:
@@ -357,8 +357,8 @@ expr_list_opt:
         ;
 
 func_args_list:
-          expr
-        | func_args_list ','[u1] expr {YYUSE($u1);}
+          noop_expr
+        | func_args_list ','[u1] noop_expr {YYUSE($u1);}
         ;
 
 func_args_modifier_tk:
@@ -401,11 +401,11 @@ func_args:  '('[u1] func_distinct_opt ')'[u2] {
 func:     func_name func_args
         ;
 
-expr:     expr_common
+noop_expr: expr_common
         | data_name
         | colref_exact
         | colref_asterisk
-        | expr post_exprs
+        | noop_expr post_exprs
         ;
 
 operator: TOK_OPERATOR
@@ -447,7 +447,7 @@ select_distinct_opt:
         ;
 
 select_arg:
-          expr alias_opt
+          noop_expr alias_opt
         ;
 
 select_list: select_arg
@@ -459,7 +459,7 @@ top_opt:
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$data);
         }
-        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
+        | TOK_TOP[tk] '('[u1] noop_expr ')'[u2] percent_opt {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
             YYUSE($u2);
@@ -521,7 +521,7 @@ join_qual:
             YYUSE($u1);
             YYUSE($u2);
         }
-        | TOK_ON[tk] expr {
+        | TOK_ON[tk] noop_expr {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -549,7 +549,7 @@ from_opt:
         ;
 
 where_opt:
-        | TOK_WHERE[key] expr {
+        | TOK_WHERE[key] noop_expr {
             sqli_store_data(ctx, &$key);
         }
         ;
@@ -562,7 +562,7 @@ group_opt:
         ;
 
 having_opt:
-        | TOK_HAVING[tk1] expr {
+        | TOK_HAVING[tk1] noop_expr {
             sqli_store_data(ctx, &$tk1);
         }
         ;
@@ -577,8 +577,8 @@ order:
         ;
 
 sort_list:
-          expr order
-        | sort_list ','[u1] expr order {YYUSE($u1);}
+          noop_expr order
+        | sort_list ','[u1] noop_expr order {YYUSE($u1);}
         | error
         ;
 
@@ -768,7 +768,7 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '='[u1] expr {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '='[u1] noop_expr {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
@@ -786,7 +786,7 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] '='[u3] expr {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] '='[u3] noop_expr {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
@@ -881,7 +881,7 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
         }
         ;
 
-print:    TOK_PRINT[tk] expr {
+print:    TOK_PRINT[tk] noop_expr {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -917,7 +917,7 @@ load:
         }
         ;
 
-set:      TOK_SET[tk] expr {
+set:      TOK_SET[tk] noop_expr {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -964,16 +964,16 @@ alter: TOK_ALTER[tk1] TOK_DATABASE[tk2] data_name[name] TOK_SET[tk3] TOK_RECOVER
         }
         ;
 
-if_else:  TOK_IF[tk1] expr sql_parens {
+if_else:  TOK_IF[tk1] noop_expr sql_parens {
             sqli_store_data(ctx, &$tk1);
         }
-        | TOK_IF[tk1] expr sql_parens TOK_ELSE[tk2] sql_parens {
+        | TOK_IF[tk1] noop_expr sql_parens TOK_ELSE[tk2] sql_parens {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
         ;
 
-_while:  TOK_WHILE[tk1] expr sql_parens {
+_while:  TOK_WHILE[tk1] noop_expr sql_parens {
             sqli_store_data(ctx, &$tk1);
         }
         ;
@@ -1020,7 +1020,7 @@ after_exp_cont_op_noexpr:
         ;
 
 after_exp_cont_op:
-        op_expr after_exp_cont_op_noexpr
+        expr after_exp_cont_op_noexpr
         | where_opt after_exp_cont_op_noexpr
         ;
 
@@ -1034,9 +1034,9 @@ after_exp_cont:
         ;
 
 start_rce_cont: close_multiple_parens_opt semicolons_opt multiple_sqls
-        | close_multiple_parens_opt op_expr after_exp_cont
+        | close_multiple_parens_opt expr after_exp_cont
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
-        | op_expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 %%
