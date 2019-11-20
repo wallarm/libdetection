@@ -106,8 +106,13 @@ start_string: TOK_START_STRING {
 data:     TOK_DATA
         | data TOK_DATA {
             if ($1.flags == SQLI_VALUE_NEEDFREE) {
-                $$.value.str = realloc($1.value.str, $1.value.len +
-                                       $2.value.len);
+                if ($1.value.len + $2.value.len) {
+                    $$.value.str = realloc($1.value.str, $1.value.len +
+                                           $2.value.len);
+                } else {
+                    $$ = $1;
+                }
+
                 if ($$.value.str) {
                     $1.flags = 0;
                 }
