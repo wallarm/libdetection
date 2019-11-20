@@ -294,6 +294,7 @@ sqli_store_data(
     struct sqli_token_arg_data *info)
 {
     switch (info->tok) {
+    case TOK_NUM:
     case TOK_DATA:
         detect_ctx_result_store_data(
             &ctx->res, &(struct detect_str){CSTR_LEN("DATA")}, &info->value);
