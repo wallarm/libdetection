@@ -672,7 +672,7 @@ sqli_get_token(
           KEYNAME_SET_RET(ctx, arg, TIME, SQLI_KEY_INSTR);
       }
       <INITIAL> '||' {
-          KEYNAME_SET_RET(ctx, arg, OR, SQLI_KEY_INSTR);
+          KEYNAME_SET_RET(ctx, arg, OR2, SQLI_KEY_INSTR);
       }
       <INITIAL> 'AND'/key_end {
           KEYNAME_SET_RET(ctx, arg, AND, SQLI_KEY_INSTR);
