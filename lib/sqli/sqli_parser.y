@@ -34,7 +34,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR TOK_NUM
 %token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+'
-%token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
+%token <data> TOK_OR TOK_OR2 TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST TOK_EXIST
 %token <data> TOK_COLLATE TOK_UESCAPE
@@ -266,6 +266,9 @@ within_opt:
 
 logical_expr: noop_expr logical_operator noop_expr {
             sqli_store_data(ctx, &$logical_operator);
+        }
+        | noop_expr TOK_OR2[tk] noop_expr {
+            sqli_token_data_destructor(&$tk);
         }
         | noop_expr '='[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
