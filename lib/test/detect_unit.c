@@ -513,6 +513,12 @@ Tsqli_data_name(void)
 }
 
 static void
+Tsqli_regress_zero_realloc(void)
+{
+    s_sqli_not_attacks({CSTR_LEN("\"''\"")});
+}
+
+static void
 Tbash_constraints(void)
 {
     CU_ASSERT_EQUAL(bash_lexer_test(), 0);
@@ -716,6 +722,7 @@ main(void)
         {"dot_e_dot", Tsqli_dot_e_dot},
         {"label", Tsqli_label},
         {"data_name", Tsqli_data_name},
+        {"regress_zero_realloc", Tsqli_regress_zero_realloc},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
