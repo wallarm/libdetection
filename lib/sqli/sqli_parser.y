@@ -278,6 +278,16 @@ logical_expr: noop_expr logical_operator noop_expr {
         | TOK_EXIST[operator] noop_expr {
             sqli_store_data(ctx, &$operator);
         }
+        | noop_expr TOK_IN[tk] '('[u1] expr_list ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | noop_expr TOK_IN[tk] '('[u1] select ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
         | '('[u1] logical_expr ')'[u2] {
             YYUSE($u1);
             YYUSE($u2);
@@ -504,7 +514,6 @@ logical_operator: TOK_OR
             sqli_token_data_destructor(&$tk1);
             $$ = $tk2;
         }
-        | TOK_IN
         | TOK_SOUNDS
         | TOK_INTO
         | TOK_IS
