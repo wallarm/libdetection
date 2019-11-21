@@ -1,3 +1,9 @@
+libdetection (1.2.1-2) stable; urgency=medium
+
+  * Bump version
+
+ -- Dmitry Murzin <dmurzin@wallarm.com>  Thu, 21 Nov 2019 19:48:02 +0300
+
 libdetection (1.2.1-1) stable; urgency=medium
 
   * NODE-2552: update version to force upgrade from Node 2.12 to Node 2.14
