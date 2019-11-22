@@ -331,9 +331,6 @@ expr_common:
             sqli_store_data(ctx, &$operator);
         }
         | waitfor_delay
-        | TOK_AS[tk] colref_exact {
-            sqli_store_data(ctx, &$tk);
-        }
         | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
@@ -442,6 +439,16 @@ expr_list_opt:
 
 func_args_list:
           noop_expr
+        | noop_expr TOK_AS[tk] data_name[type] {
+            sqli_token_data_destructor(&$tk);
+            sqli_token_data_destructor(&$type);
+        }
+        | noop_expr TOK_AS[tk] data_name[type] '('[u1] noop_expr ')'[u2] {
+            sqli_token_data_destructor(&$tk);
+            sqli_token_data_destructor(&$type);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
         | func_args_list ','[u1] noop_expr {YYUSE($u1);}
         ;
 
@@ -543,7 +550,6 @@ important_operator: TOK_DIV
         | TOK_COLLATE
         | TOK_UESCAPE
         | TOK_USING
-        | TOK_AS
         | TOK_AGAINST
         ;
 
@@ -580,12 +586,12 @@ select_args: select_distinct_opt top_opt '*'[key] {
 
 as_opt:
         | TOK_AS[tk] {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
         ;
 
 alias: as_opt data_name[data] {
-            sqli_store_data(ctx, &$data);
+            sqli_token_data_destructor(&$data);
         }
         ;
 
