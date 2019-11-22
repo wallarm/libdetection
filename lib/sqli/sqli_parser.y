@@ -92,7 +92,7 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
-        | TOK_START_DATA expr ','[u1] expr_cont {
+        | TOK_START_DATA noop_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
         ;
@@ -157,8 +157,8 @@ expr_cont:
         ;
 
 data_cont:
-        | expr after_exp_cont_op_noexpr after_exp_cont
-        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -376,13 +376,13 @@ expr_common:
 
 expr:     noop_expr
         | important_operator noop_expr {
-            sqli_store_data(ctx, &$important_operator);
+            sqli_token_data_destructor(&$important_operator);
         }
         | operator noop_expr {
             sqli_token_data_destructor(&$operator);
         }
         | logical_operator noop_expr {
-            sqli_store_data(ctx, &$logical_operator);
+            sqli_token_data_destructor(&$logical_operator);
         }
         | '='[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
