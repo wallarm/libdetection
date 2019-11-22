@@ -322,8 +322,9 @@ expr_common:
         | TOK_OUTFILE[operator] noop_expr {
             sqli_store_data(ctx, &$operator);
         }
-        | TOK_MATCH[operator] noop_expr {
+        | TOK_MATCH[operator] noop_expr TOK_AGAINST[tk] noop_expr {
             sqli_store_data(ctx, &$operator);
+            sqli_store_data(ctx, &$tk);
         }
         | waitfor_delay
         | '('[tk] select ')'[u1] alias_opt {
@@ -545,7 +546,6 @@ important_operator: TOK_DIV
         | TOK_COLLATE
         | TOK_UESCAPE
         | TOK_USING
-        | TOK_AGAINST
         ;
 
 select_distinct_opt:
