@@ -269,6 +269,15 @@ logical_expr: noop_expr logical_operator noop_expr {
         | noop_expr TOK_OR2[tk] noop_expr {
             sqli_token_data_destructor(&$tk);
         }
+        | noop_expr TOK_IS[tk] TOK_NAME[name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$name);
+        }
+        | noop_expr TOK_IS[tk1] TOK_NOT[tk2] TOK_NAME[name] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_token_data_destructor(&$name);
+        }
         | noop_expr '='[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
         }
@@ -380,6 +389,15 @@ expr:     noop_expr
         }
         | '='[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
+        }
+        | TOK_IS[tk] TOK_NAME[name] {
+            sqli_token_data_destructor(&$tk);
+            sqli_token_data_destructor(&$name);
+        }
+        | TOK_IS[tk1] TOK_NOT[tk2] TOK_NAME[name] {
+            sqli_token_data_destructor(&$tk1);
+            sqli_token_data_destructor(&$tk2);
+            sqli_token_data_destructor(&$name);
         }
         | expr post_exprs
         ;
@@ -516,7 +534,6 @@ logical_operator: TOK_OR
         }
         | TOK_SOUNDS
         | TOK_INTO
-        | TOK_IS
         ;
 
 important_operator: TOK_DIV
