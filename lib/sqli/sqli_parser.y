@@ -298,6 +298,10 @@ expr_common:
         | '+'[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
         }
+        | noop_expr ':'[u1] '='[operator] noop_expr {
+            YYUSE($u1);
+            sqli_token_data_destructor(&$operator);
+        }
         | TOK_BINARY[operator] noop_expr {
             sqli_store_data(ctx, &$operator);
         }
