@@ -528,9 +528,6 @@ sqli_get_token(
       <INITIAL> 'DELETE'/key_end {
           KEYNAME_SET_RET(ctx, arg, DELETE, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
       }
-      <INITIAL> 'ATTACH'/key_end {
-          KEYNAME_SET_RET(ctx, arg, ATTACH, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
-      }
       <INITIAL> 'DISTINCT'/key_end {
           KEYNAME_SET_RET(ctx, arg, DISTINCT, SQLI_KEY_INSTR);
       }

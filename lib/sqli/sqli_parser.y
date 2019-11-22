@@ -19,7 +19,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %define lr.type lalr
 
 %type <data> data data_name
-%type <data> operator important_operator command logical_operator
+%type <data> operator important_operator logical_operator
 %type <data> join_type
 %type <data> select_extra_tk
 %type <data> union_tk
@@ -49,7 +49,6 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_LIMIT TOK_OFFSET
 %token <data> TOK_NATURAL TOK_JOIN
 %token <data> TOK_SELECT TOK_UPDATE TOK_INSERT TOK_EXECUTE TOK_DELETE
-%token <data> TOK_ATTACH
 %token <data> TOK_DROP
 %token <data> TOK_COMMA
 %token <data> TOK_SET
@@ -191,10 +190,6 @@ sql_no_parens:
         | if_else
         | _while
         | _label
-        | command error {
-            sqli_store_data(ctx, &$command);
-            yyclearin;
-        }
         ;
 
 sql_parens: sql_no_parens
@@ -1094,9 +1089,6 @@ _label:   TOK_NAME[tk] ':'[u1] {
             sqli_token_data_destructor(&$tk);
             YYUSE(&$u1);
         }
-        ;
-
-command:  TOK_ATTACH
         ;
 
 close_multiple_parens: ')'[u1] {YYUSE($u1);}
