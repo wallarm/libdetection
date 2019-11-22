@@ -1111,9 +1111,7 @@ after_exp_cont:
         ;
 
 start_rce_cont: close_multiple_parens_opt semicolons_opt multiple_sqls
-        | close_multiple_parens_opt expr after_exp_cont
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
-        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 %%
