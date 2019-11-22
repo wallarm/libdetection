@@ -1030,7 +1030,7 @@ load:
         ;
 
 set:      TOK_SET[tk] noop_expr {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
         ;
 

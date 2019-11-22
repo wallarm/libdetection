@@ -344,7 +344,7 @@ Tsqli_procedure_analyse(void)
 static void
 Tsqli_set(void)
 {
-    s_sqli_attacks({CSTR_LEN("SET @t=1")});
+    s_sqli_not_attacks({CSTR_LEN("SET @t=1")});
 }
 
 static void
