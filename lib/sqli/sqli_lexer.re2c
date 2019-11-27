@@ -345,11 +345,6 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(NAME, ctx, arg);
       }
-      <VAR> [:] => INITIAL {
-          detect_buf_deinit(&ctx->lexer.buf);
-          YYSETSTATE(-1);
-          KEYNAME_SET_RET(ctx, arg, LABEL, SQLI_KEY_INSTR);
-      }
       <VAR> [^] => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
@@ -532,9 +527,6 @@ sqli_get_token(
       }
       <INITIAL> 'DELETE'/key_end {
           KEYNAME_SET_RET(ctx, arg, DELETE, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
-      }
-      <INITIAL> 'ATTACH'/key_end {
-          KEYNAME_SET_RET(ctx, arg, ATTACH, SQLI_KEY_WRITE|SQLI_KEY_INSTR);
       }
       <INITIAL> 'DISTINCT'/key_end {
           KEYNAME_SET_RET(ctx, arg, DISTINCT, SQLI_KEY_INSTR);
