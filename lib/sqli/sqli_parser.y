@@ -132,6 +132,9 @@ data_name:  data
         |   TOK_DATA2
         |   TOK_TABLE
         |   TOK_BINARY
+        |   TOK_OPEN
+        |   TOK_LANGUAGE
+        |   TOK_PERCENT
         | '['[u1] TOK_NAME[name] ']'[u2] {
             YYUSE($u1);
             $$ = $name;

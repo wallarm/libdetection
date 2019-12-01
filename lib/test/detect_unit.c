@@ -286,6 +286,7 @@ Tsqli_select(void)
         {CSTR_LEN("SELECT lead(col, 0) OVER (ORDER BY col) FROM table_name")},
         {CSTR_LEN("SELECT listagg(col,', ') WITHIN GROUP "
                   "(ORDER BY col) from table_name")},
+        {CSTR_LEN("select 1, open, language, percent")},
     );
 }
 
