@@ -524,6 +524,10 @@ logical_operator: TOK_OR
             $$ = $tk2;
         }
         | TOK_BETWEEN
+        | TOK_NOT[tk1] TOK_BETWEEN[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_LIKE
         | TOK_NOT[tk1] TOK_LIKE[tk2] {
             sqli_token_data_destructor(&$tk1);
