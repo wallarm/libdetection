@@ -791,7 +791,7 @@ union_tk:
         ;
 
 union_c: union_tk[tk] {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
         ;
 
