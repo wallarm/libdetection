@@ -24,7 +24,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %type <data> select_extra_tk
 %type <data> union_tk
 %type <data> func_args_modifier_tk
-%type <data> post_expr_tk
+%type <data> post_expr_tk expr
 %type <data> delete_modifier
 %type <data> load_modifier data_xml
 
@@ -338,6 +338,9 @@ expr_common:
             YYUSE($u1);
             YYUSE($u2);
         }
+        | '('[u1] expr_list {
+          YYUSE($u1);
+        }
         | '('[tk] error {
             sqli_token_data_destructor(&$tk);
         }
@@ -373,27 +376,26 @@ expr_common:
         }
         ;
 
-expr:     noop_expr
-        | important_operator noop_expr {
-            sqli_token_data_destructor(&$important_operator);
+expr:     important_operator noop_expr {
+            $$ = $important_operator;
         }
         | operator noop_expr {
-            sqli_token_data_destructor(&$operator);
+            $$ = $operator;
         }
         | logical_operator noop_expr {
-            sqli_token_data_destructor(&$logical_operator);
+            $$ = $logical_operator;
         }
         | '='[operator] noop_expr {
-            sqli_token_data_destructor(&$operator);
+            $$ = $operator;
         }
         | TOK_IS[tk] TOK_NAME[name] {
-            sqli_token_data_destructor(&$tk);
             sqli_token_data_destructor(&$name);
+            $$ = $tk;
         }
         | TOK_IS[tk1] TOK_NOT[tk2] TOK_NAME[name] {
-            sqli_token_data_destructor(&$tk1);
             sqli_token_data_destructor(&$tk2);
             sqli_token_data_destructor(&$name);
+            $$ = $tk1;
         }
         | expr post_exprs
         ;
@@ -1145,7 +1147,9 @@ after_exp_cont_op_noexpr:
         ;
 
 after_exp_cont_op:
-        expr after_exp_cont_op_noexpr
+        expr[tk] after_exp_cont_op_noexpr {
+            sqli_store_data(ctx, &$tk);
+        }
         | where_opt after_exp_cont_op_noexpr
         ;
 
