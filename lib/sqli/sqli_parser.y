@@ -43,7 +43,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_AS TOK_ON TOK_USING
 %token <data> TOK_UNION TOK_INTERSECT TOK_EXCEPT TOK_ALL
 %token <data> TOK_ORDER TOK_GROUP TOK_BY TOK_HAVING
-%token <data> TOK_TOP TOK_PERCENT
+%token <data> TOK_TOP TOK_PERCENT TOK_FIRST
 %token <data> TOK_DESC TOK_ASC
 %token <data> TOK_CROSS TOK_FULL TOK_INNER TOK_LEFT TOK_RIGHT
 %token <data> TOK_LIMIT TOK_OFFSET
@@ -571,12 +571,25 @@ top_opt:
             YYUSE($u1);
             YYUSE($u2);
         }
+        | TOK_FIRST[tk] TOK_NUM[data] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_FIRST[tk] '('[u1] noop_expr ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
         ;
 
 select_args: select_distinct_opt top_opt '*'[key] {
             sqli_store_data(ctx, &$key);
         }
         | select_distinct_opt top_opt select_list
+        | top_opt select_distinct_opt '*'[key] {
+            sqli_store_data(ctx, &$key);
+        }
+        | top_opt select_distinct_opt select_list
         ;
 
 as_opt:
