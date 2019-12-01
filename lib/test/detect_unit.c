@@ -504,6 +504,12 @@ Tsqli_label(void)
 }
 
 static void
+Tsqli_comment(void)
+{
+    s_sqli_attacks({CSTR_LEN("/*!SELECT*/ 1")});
+}
+
+static void
 Tsqli_data_name(void)
 {
     s_sqli_attacks(
@@ -726,6 +732,7 @@ main(void)
         {"label", Tsqli_label},
         {"data_name", Tsqli_data_name},
         {"regress_zero_realloc", Tsqli_regress_zero_realloc},
+        {"comment", Tsqli_comment},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
