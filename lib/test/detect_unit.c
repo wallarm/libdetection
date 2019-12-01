@@ -125,6 +125,7 @@ Tsqli_operators(void)
         {CSTR_LEN("1 AND FileToClob('/etc/passwd', "
                   "'server')::html")},
         {CSTR_LEN("1 AND U&'pgsql evade' uescape '!'")},
+        {CSTR_LEN("1 NOT BETWEEN 0 AND 1")},
     );
 }
 
