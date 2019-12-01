@@ -147,6 +147,7 @@ static void
 Tsqli_top(void)
 {
     s_sqli_attacks({CSTR_LEN("SELECT TOP 5 * FROM table_name")});
+    s_sqli_attacks({CSTR_LEN("SELECT FIRST 5 * FROM table_name")});
 }
 
 static void
