@@ -7,6 +7,7 @@ BuildPackage(
     dists: [
         'centos6',
         'centos7',
+        'centos8',
         'trusty',
         'xenial',
         'bionic',
