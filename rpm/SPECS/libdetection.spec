@@ -1,6 +1,6 @@
 Name: libdetection1
 Version: 1.2.1
-Release: 2
+Release: 3
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
@@ -88,6 +88,9 @@ require attacks samples to learn.
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Dec 05 2019 Dmitry Murzin <dmurzin@wallarm.com> - 1.2.1-3
+- Rebuilt for CentOS 8 (NODE-1790)
+
 * Thu Nov 21 2019 Dmitry Murzin <dmurzin@wallarm.com> - 1.2.1-2
 - Bump version
 

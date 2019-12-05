@@ -1,3 +1,7 @@
+libdetection (1.2.1-3) stable; urgency=medium
+  * Rebuilt for CentOS 8 (NODE-1790)
+ -- Dmitry Murzin <dmurzin@wallarm.com>  Thu, 05 Dec 2019 23:17:42 +0300
+
 libdetection (1.2.1-2) stable; urgency=medium
 
   * Bump version
