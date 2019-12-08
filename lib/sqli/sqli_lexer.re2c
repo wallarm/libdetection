@@ -919,7 +919,7 @@ sqli_get_token(
       <INITIAL> "/*!" => INITIAL {
           goto sqli_INITIAL;
       }
-      <INITIAL> [\x00] {
+      <INITIAL> [\x00]|'-'[\x00]|'/'[\x00] {
           if (ctx->lexer.re2c.fin && ctx->lexer.re2c.tmp_data_in_use &&
               ctx->lexer.re2c.pos >= ctx->lexer.re2c.tmp_data + ctx->lexer.re2c.tmp_data_siz) {
               return (0);
