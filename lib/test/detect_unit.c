@@ -18,6 +18,9 @@
 #define s_bash_attacks(...) s_type_checks_("bash", true, __VA_ARGS__)
 #define s_bash_not_attacks(...) s_type_checks_("bash", false, __VA_ARGS__)
 
+#define s_pt_attacks(...) s_type_checks_("pt", true, __VA_ARGS__)
+#define s_pt_not_attacks(...) s_type_checks_("pt", false, __VA_ARGS__)
+
 static void
 s_type_checks(
     const char *typename,
@@ -669,6 +672,14 @@ Tbash_substitute(void)
     );
 }
 
+static void
+Tpt_travs_names_root(void)
+{
+    s_pt_attacks(
+        {CSTR_LEN("../\\windows/\\system32/\\drivers/\\etc/\\hosts")},
+    );
+}
+
 int
 main(void)
 {
@@ -746,11 +757,17 @@ main(void)
         {"substitute", Tbash_substitute},
         CU_TEST_INFO_NULL
     };
+    CU_TestInfo pt_tests[] = {
+        {"travs_names_root", Tpt_travs_names_root},
+        CU_TEST_INFO_NULL
+    };
     CU_SuiteInfo suites[] = {
         {.pName = "generic", .pTests = generic_tests},
         {.pName = "sqli", .pTests = sqli_tests,
          .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
         {.pName = "bash", .pTests = bash_tests,
+         .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
+        {.pName = "pt", .pTests = pt_tests,
          .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
         CU_SUITE_INFO_NULL,
     };
