@@ -90,7 +90,7 @@ context:  start_data
         | start_rce
         ;
 
-start_data: TOK_START_DATA data_cont
+start_data: TOK_START_DATA expr_cont
         | TOK_START_DATA noop_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
@@ -98,7 +98,7 @@ start_data: TOK_START_DATA data_cont
 
 start_string: TOK_START_STRING {
             ctx->lexer.instring = true;
-        } data_cont
+        } expr_cont
         ;
 
 data:     TOK_DATA
@@ -154,11 +154,6 @@ data_name:  data
         ;
 
 expr_cont:
-        | noop_expr after_exp_cont_op_noexpr after_exp_cont
-        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
-        ;
-
-data_cont:
         | noop_expr after_exp_cont_op_noexpr after_exp_cont
         | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
