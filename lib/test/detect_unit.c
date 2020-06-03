@@ -126,6 +126,7 @@ Tsqli_operators(void)
                   "'server')::html")},
         {CSTR_LEN("1 AND U&'pgsql evade' uescape '!'")},
         {CSTR_LEN("1 NOT BETWEEN 0 AND 1")},
+        {CSTR_LEN("1 AND ~1")},
     );
 }
 
