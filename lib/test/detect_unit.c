@@ -528,6 +528,16 @@ Tsqli_regress_zero_realloc(void)
 }
 
 static void
+Tsqli_table_name(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("SELECT 1 FROM db:table")},
+        {CSTR_LEN("SELECT 1 FROM db:owner.object")},
+        {CSTR_LEN("SELECT 1 FROM db:owner.object.object")},
+    );
+}
+
+static void
 Tbash_constraints(void)
 {
     CU_ASSERT_EQUAL(bash_lexer_test(), 0);
@@ -733,6 +743,7 @@ main(void)
         {"data_name", Tsqli_data_name},
         {"regress_zero_realloc", Tsqli_regress_zero_realloc},
         {"comment", Tsqli_comment},
+        {"table_name", Tsqli_table_name},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
