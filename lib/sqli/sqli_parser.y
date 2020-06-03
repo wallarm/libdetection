@@ -199,7 +199,7 @@ sql_parens: sql_no_parens
         | '('[u1] sql_parens ')'[u2] {YYUSE($u1); YYUSE($u2);}
         ;
 
-colref_exact:
+colref_exact2:
         data_name {
             sqli_token_data_destructor(&$data_name);
         }
@@ -227,7 +227,14 @@ colref_exact:
         }
         ;
 
-colref_asterisk:
+colref_exact: colref_exact2
+        | data_name[dname] ':'[u1] colref_exact2 {
+            sqli_token_data_destructor(&$dname);
+            YYUSE($u1);
+        }
+        ;
+
+colref_asterisk2:
         data_name '.'[u1] '*'[u2] {
             sqli_store_data(ctx, &$data_name);
             YYUSE($u1);
@@ -239,6 +246,13 @@ colref_asterisk:
             YYUSE($u1);
             YYUSE($u2);
             YYUSE($u3);
+        }
+        ;
+
+colref_asterisk: colref_asterisk2
+        | data_name[dname] ':'[u1] colref_asterisk2 {
+            sqli_token_data_destructor(&$dname);
+            YYUSE($u1);
         }
         ;
 
