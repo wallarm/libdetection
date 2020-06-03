@@ -33,7 +33,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR TOK_NUM
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+'
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+' '~'
 %token <data> TOK_OR TOK_OR2 TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST TOK_EXIST
@@ -315,6 +315,9 @@ expr_common:
         | '+'[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
         }
+        | '~'[operator] noop_expr {
+            sqli_token_data_destructor(&$operator);
+        }
         | noop_expr ':'[u1] '='[operator] noop_expr {
             YYUSE($u1);
             sqli_token_data_destructor(&$operator);
@@ -504,6 +507,7 @@ noop_expr: expr_common
         ;
 
 operator: TOK_OPERATOR
+        | '~'
         | '+'
         | '-'
         | '*'
