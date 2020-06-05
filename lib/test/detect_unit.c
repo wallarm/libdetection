@@ -459,6 +459,7 @@ Tsqli_if_else(void)
                   "SET column1 = value1 ELSE UPDATE "
                   "table_name SET column1 = value1")},
         {CSTR_LEN("SELECT IF(1=1,1, 0)")},
+        {CSTR_LEN("IF (1=1) THEN func(5); ELSE func(0); END IF;")},
     );
 }
 
