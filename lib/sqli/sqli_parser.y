@@ -135,16 +135,6 @@ data_name:  data
         |   TOK_OPEN
         |   TOK_LANGUAGE
         |   TOK_PERCENT
-        | '['[u1] TOK_NAME[name] ']'[u2] {
-            YYUSE($u1);
-            $$ = $name;
-            YYUSE($u2);
-        }
-        | '['[u1] TOK_TABLE[name] ']'[u2] {
-            YYUSE($u1);
-            $$ = $name;
-            YYUSE($u2);
-        }
         | '{'[u1] TOK_NAME[name] noop_expr '}'[u2] {
             YYUSE($u1);
             $$ = $name;
