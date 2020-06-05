@@ -1100,6 +1100,20 @@ if_else:  TOK_IF[tk1] noop_expr sql_parens {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
+        | TOK_IF[tk1] noop_expr TOK_THEN[tk2] sql_parens semicolons_opt TOK_END[tk3] TOK_IF[tk4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+        }
+        | TOK_IF[tk1] noop_expr TOK_THEN[tk2] sql_parens semicolons_opt
+          TOK_ELSE[tk3] sql_parens semicolons_opt TOK_END[tk4] TOK_IF[tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
         ;
 
 _while:  TOK_WHILE[tk1] noop_expr sql_parens {
