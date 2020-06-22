@@ -500,30 +500,60 @@ bash_get_token(
       <INITIAL, WORD> [$][_a-zA-Z] => VAR {
           if (!ctx->lexer.buf.data.str)
               detect_buf_init(&ctx->lexer.buf, 32, 1024);
-          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
-          goto bash_VAR;
+
+          detect_buf_init(&ctx->lexer.var_name, 32, 1024);
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
       }
       <INITIAL, WORD> "${"word => VAR2 {
           if (!ctx->lexer.buf.data.str)
               detect_buf_init(&ctx->lexer.buf, 32, 1024);
-          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
-          goto bash_VAR2;
+
+          detect_buf_init(&ctx->lexer.var_name, 32, 1024);
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR2;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
       }
       <VAR> [_a-zA-Z0-9] {
-          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
-          goto bash_VAR;
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
       }
       <VAR> [^] => WORD {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+          detect_buf_deinit(&ctx->lexer.var_name);
           goto bash_WORD;
       }
       <VAR2> "}" => WORD {
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          detect_buf_deinit(&ctx->lexer.var_name);
           goto bash_WORD;
       }
       <VAR2> word {
-          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
-          goto bash_VAR2;
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR2;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
       }
       <WORD> word {
           if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\'') {

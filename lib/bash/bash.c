@@ -74,6 +74,7 @@ static void
 bash_lexer_deinit(struct bash_detect_lexer_ctx *lexer)
 {
     detect_buf_deinit(&lexer->buf);
+    detect_buf_deinit(&lexer->var_name);
     detect_re2c_deinit(&lexer->re2c);
 }
 

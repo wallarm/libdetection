@@ -29,6 +29,7 @@ struct bash_detect_lexer_ctx {
     int state;
     int condition;
     struct detect_buf buf;
+    struct detect_buf var_name;
 };
 
 #include "bash_parser.h"
