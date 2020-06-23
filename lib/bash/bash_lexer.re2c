@@ -2,6 +2,7 @@
 #include "bash.h"
 #include "bash_lexer.h"
 #include "bash_test.h"
+#include <fnmatch.h>
 #include <string.h>
 #include <stdio.h>
 #include <wallarm/utils.h>
@@ -599,6 +600,12 @@ return_word:
               }
 
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str) {
+                  if (detect_buf_add_char(&ctx->lexer.buf, '\0')) {
+                      detect_buf_deinit(&ctx->lexer.buf);
+                      RET(ctx, TOK_ERROR);
+                  }
+                  ctx->lexer.buf.data.len--;
+
                   char *pch = memrchr(ctx->lexer.buf.data.str, '/', ctx->lexer.buf.data.len);
                   if (!pch)
                       pch = ctx->lexer.buf.data.str;
@@ -610,6 +617,15 @@ return_word:
                   if (idx >= 0) {
                       detect_buf_deinit(&ctx->lexer.buf);
                       KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                  }
+
+                  if (*ctx->lexer.buf.data.str == '/') {
+                      for (size_t i = 1; i < W_ARRAY_SIZE(bash_lexer_cmds); ++i) {
+                        if (!fnmatch(pch, bash_lexer_cmds[i].str, 0)) {
+                            detect_buf_deinit(&ctx->lexer.buf);
+                            KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                        }
+                      }
                   }
               }
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str &&
