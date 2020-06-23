@@ -606,6 +606,27 @@ return_word:
                   }
                   ctx->lexer.buf.data.len--;
 
+                  while (true) {
+                      size_t s_len = ctx->lexer.buf.data.len;
+                      char *s_end = ctx->lexer.buf.data.str + s_len;
+                      char *start = memchr(ctx->lexer.buf.data.str, '{', s_len);
+                      if (!start)
+                          break;
+
+                      char *end = memrchr(start, '}', s_len);
+                      if (!end)
+                          break;
+
+                      char *pch = memchr(start, ',', end - start);
+                      if (!pch)
+                          break;
+
+                      memcpy(start, start + 1, pch - (start + 1));
+                      memcpy(pch - 1, end + 1, s_end - (end + 1) + 1);
+                      ctx->lexer.buf.data.len =
+                          pch - 1 + (s_end - (end + 1)) - ctx->lexer.buf.data.str;
+                  }
+
                   char *pch = memrchr(ctx->lexer.buf.data.str, '/', ctx->lexer.buf.data.len);
                   if (!pch)
                       pch = ctx->lexer.buf.data.str;
