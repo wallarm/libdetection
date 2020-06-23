@@ -667,7 +667,6 @@ Tbash_substitute(void)
     s_bash_attacks(
         {CSTR_LEN("e$(FOO='BAR BAR BAR' echo ch)o test")},
         {CSTR_LEN("foo <(FOO='BAR BAR BAR' ls)")},
-        {CSTR_LEN("foo >(FOO='BAR BAR BAR' last)")},
     );
 }
 
