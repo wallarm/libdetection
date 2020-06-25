@@ -543,6 +543,12 @@ var:
               struct var *var;
               if ((var = WRB_FIND(vars_tree, &ctx->lexer.vars, &ctx->lexer.var_name)) != NULL) {
                   for(int i = 0; i < var->val.len; ++i) {
+                      if (memchr(" \t", var->val.str[i], 2)) {
+                          detect_buf_deinit(&ctx->lexer.var_name);
+                          YYSETCONDITION(bash_INITIAL);
+                          YYSETSTATE(-1);
+                          goto return_word;
+                      }
                       if (detect_buf_add_char(&ctx->lexer.buf, var->val.str[i])) {
                           detect_buf_deinit(&ctx->lexer.var_name);
                           detect_buf_deinit(&ctx->lexer.buf);

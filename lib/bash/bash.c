@@ -74,6 +74,13 @@ bash_lexer_init(struct bash_detect_lexer_ctx *lexer)
     detect_re2c_init(&lexer->re2c);
     lexer->state = -1;
     RB_INIT(&lexer->vars);
+
+    struct var *var = calloc(1, sizeof(*var));
+    var->name.str = "IFS";
+    var->name.len = 3;
+    var->val.str = " ";
+    var->val.len = 1;
+    RB_INSERT(vars_tree, &lexer->vars, var);
 }
 
 static void
