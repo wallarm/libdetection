@@ -576,6 +576,14 @@ bash_get_token(
 
           goto return_word;
       }
+      <WORD> "$()" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_WORD;
+      }
+      <WORD> "``" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_WORD;
+      }
       <WORD> "$(" => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
@@ -769,6 +777,10 @@ return_word:
       <INITIAL> '|&' {
           RET_DATA(BAR_AND, ctx, arg);
       }
+      <INITIAL> "$()" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_INITIAL;
+      }
       <INITIAL> '$(' {
           RET_DATA(SUBSH_START, ctx, arg);
       }
@@ -879,6 +891,10 @@ return_word:
               KEYNAME_SET_RET_WO_CHECK(ctx, arg, ARITH_FOR_EXPRS, BASH_KEY_INSTR);
           detect_buf_deinit(&ctx->lexer.buf);
           RET(ctx, TOK_ERROR);
+      }
+      <INITIAL> "``" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_INITIAL;
       }
       <INITIAL> self {
           arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
