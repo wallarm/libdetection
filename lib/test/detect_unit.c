@@ -547,6 +547,7 @@ Tbash_simplest(void)
         {CSTR_LEN("VAR=VAL l${name}s")},
         {CSTR_LEN("$-id")},
         {CSTR_LEN("$*id")},
+        {CSTR_LEN("(aa=d;i$aa)")},
     );
 }
 
