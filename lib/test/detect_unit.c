@@ -669,6 +669,14 @@ Tbash_substitute(void)
     );
 }
 
+static void
+Tbash_globbing(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("/???/??t /???/??ss??")},
+    );
+}
+
 int
 main(void)
 {
@@ -744,6 +752,7 @@ main(void)
         {"redirection", Tbash_redirection},
         {"inj", Tbash_inj},
         {"substitute", Tbash_substitute},
+        {"globbing", Tbash_globbing},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
