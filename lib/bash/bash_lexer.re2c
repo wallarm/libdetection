@@ -636,24 +636,50 @@ return_word:
                   }
 
                   char *pch = memrchr(ctx->lexer.buf.data.str, '/', ctx->lexer.buf.data.len);
-                  if (!pch)
+                  bool was_root = false;
+                  if (!pch) {
                       pch = ctx->lexer.buf.data.str;
-                  else
+                      was_root = true;
+                  } else {
+                      size_t len = pch - ctx->lexer.buf.data.str;
+                      char *prev = pch;
+                      char *cur = memrchr(ctx->lexer.buf.data.str, '/', len);
+                      while (cur) {
+                          *prev = '\0';
+                          if ((prev - cur - 1) == 3 && !strncmp(cur + 1, "bin", 3) ||
+                              (prev - cur - 1) == 3 && !strncmp(cur + 1, "sbin", 3) ||
+                              (prev - cur - 1) == 3 && !strncmp(cur + 1, "proc", 3) ||
+                              !fnmatch(cur + 1, "bin", 0) ||
+                              !fnmatch(cur + 1, "sbin", 0) ||
+                              !fnmatch(cur + 1, "proc", 0)) {
+                              *prev = '/';
+                              was_root = true;
+                              break;
+                          }
+                          *prev = '/';
+                          len = cur - ctx->lexer.buf.data.str;
+                          prev = cur;
+                          cur = memrchr(ctx->lexer.buf.data.str, '/', len);
+                      }
                       ++pch;
-                  int len = ctx->lexer.buf.data.len - (pch - ctx->lexer.buf.data.str);
-                  ssize_t idx = bash_lexer_cmd_find(pch, len);
-
-                  if (idx >= 0) {
-                      detect_buf_deinit(&ctx->lexer.buf);
-                      KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
                   }
 
-                  if (*ctx->lexer.buf.data.str == '/') {
-                      for (size_t i = 1; i < W_ARRAY_SIZE(bash_lexer_cmds); ++i) {
-                        if (!fnmatch(pch, bash_lexer_cmds[i].str, 0)) {
-                            detect_buf_deinit(&ctx->lexer.buf);
-                            KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
-                        }
+                  if (was_root) {
+                      int len = ctx->lexer.buf.data.len - (pch - ctx->lexer.buf.data.str);
+                      ssize_t idx = bash_lexer_cmd_find(pch, len);
+
+                      if (idx >= 0) {
+                          detect_buf_deinit(&ctx->lexer.buf);
+                          KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                      }
+
+                      if (*ctx->lexer.buf.data.str == '/') {
+                          for (size_t i = 1; i < W_ARRAY_SIZE(bash_lexer_cmds); ++i) {
+                            if (!fnmatch(pch, bash_lexer_cmds[i].str, 0)) {
+                                detect_buf_deinit(&ctx->lexer.buf);
+                                KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                            }
+                          }
                       }
                   }
               }
