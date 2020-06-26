@@ -548,6 +548,7 @@ Tbash_simplest(void)
         {CSTR_LEN("$-id")},
         {CSTR_LEN("$*id")},
         {CSTR_LEN("(aa=d;i$aa)")},
+        {CSTR_LEN("cat$IFS/etc/os-release")},
     );
 }
 
