@@ -674,6 +674,7 @@ Tbash_globbing(void)
 {
     s_bash_attacks(
         {CSTR_LEN("/???/??t /???/??ss??")},
+        {CSTR_LEN("{cat,/etc/os-release}")},
     );
 }
 
