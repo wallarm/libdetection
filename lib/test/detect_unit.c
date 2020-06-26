@@ -591,6 +591,8 @@ Tbash_commands(void)
         {CSTR_LEN("if [ 1 -eq 2 ];  then echo equal ; else echo 'not equal' ; fi")},
         {CSTR_LEN("(ls -a)")},
         {CSTR_LEN("{ ls -a; }")},
+        {CSTR_LEN("/proc/self/exe -c id")},
+        {CSTR_LEN("sg root -c id")},
     );
 }
 
