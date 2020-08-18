@@ -59,7 +59,7 @@ require attacks samples to learn.
 %setup -c
 
 %build
-./config -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} -DCMAKE_INSTALL_LIBDIR=%{_libdir} -DENABLE_SHARED=1 -DENABLE_STATIC=1
+./config -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix} -DCMAKE_INSTALL_LIBDIR=%{_libdir} -DENABLE_SHARED=1 -DENABLE_STATIC=1 -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 %{__make} -C build
 
 %install
