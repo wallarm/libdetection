@@ -19,12 +19,12 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %define lr.type lalr
 
 %type <data> data data_name
-%type <data> operator important_operator command
+%type <data> operator important_operator logical_operator
 %type <data> join_type
 %type <data> select_extra_tk
 %type <data> union_tk
 %type <data> func_args_modifier_tk
-%type <data> post_expr_tk
+%type <data> post_expr_tk expr
 %type <data> delete_modifier
 %type <data> load_modifier data_xml
 
@@ -32,9 +32,9 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_STRING
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
-%token <data> TOK_DATA TOK_NAME TOK_OPERATOR
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}'
-%token <data> TOK_OR TOK_AND TOK_IS TOK_NOT TOK_DIV
+%token <data> TOK_DATA TOK_NAME TOK_OPERATOR TOK_NUM
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+'
+%token <data> TOK_OR TOK_OR2 TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST TOK_EXIST
 %token <data> TOK_COLLATE TOK_UESCAPE
@@ -43,13 +43,12 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_AS TOK_ON TOK_USING
 %token <data> TOK_UNION TOK_INTERSECT TOK_EXCEPT TOK_ALL
 %token <data> TOK_ORDER TOK_GROUP TOK_BY TOK_HAVING
-%token <data> TOK_TOP TOK_PERCENT
+%token <data> TOK_TOP TOK_PERCENT TOK_FIRST
 %token <data> TOK_DESC TOK_ASC
 %token <data> TOK_CROSS TOK_FULL TOK_INNER TOK_LEFT TOK_RIGHT
 %token <data> TOK_LIMIT TOK_OFFSET
 %token <data> TOK_NATURAL TOK_JOIN
 %token <data> TOK_SELECT TOK_UPDATE TOK_INSERT TOK_EXECUTE TOK_DELETE
-%token <data> TOK_ATTACH
 %token <data> TOK_DROP
 %token <data> TOK_COMMA
 %token <data> TOK_SET
@@ -77,7 +76,6 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token <data> TOK_ALTER TOK_RECOVERY TOK_SIMPLE
 %token <data> TOK_LOCK TOK_SHARE
 %token <data> TOK_IF
-%token <data> TOK_LABEL
 %token TOK_FUNC
 %token TOK_ERROR
 
@@ -93,7 +91,7 @@ context:  start_data
         ;
 
 start_data: TOK_START_DATA data_cont
-        | TOK_START_DATA data_expr ','[u1] expr_cont {
+        | TOK_START_DATA noop_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
         ;
@@ -106,8 +104,13 @@ start_string: TOK_START_STRING {
 data:     TOK_DATA
         | data TOK_DATA {
             if ($1.flags == SQLI_VALUE_NEEDFREE) {
-                $$.value.str = realloc($1.value.str, $1.value.len +
-                                       $2.value.len);
+                if ($1.value.len + $2.value.len) {
+                    $$.value.str = realloc($1.value.str, $1.value.len +
+                                           $2.value.len);
+                } else {
+                    $$ = $1;
+                }
+
                 if ($$.value.str) {
                     $1.flags = 0;
                 }
@@ -128,6 +131,10 @@ data_name:  data
         |   TOK_NAME
         |   TOK_DATA2
         |   TOK_TABLE
+        |   TOK_BINARY
+        |   TOK_OPEN
+        |   TOK_LANGUAGE
+        |   TOK_PERCENT
         | '['[u1] TOK_NAME[name] ']'[u2] {
             YYUSE($u1);
             $$ = $name;
@@ -138,7 +145,7 @@ data_name:  data
             $$ = $name;
             YYUSE($u2);
         }
-        | '{'[u1] TOK_NAME[name] expr '}'[u2] {
+        | '{'[u1] TOK_NAME[name] noop_expr '}'[u2] {
             YYUSE($u1);
             $$ = $name;
             YYUSE($u2);
@@ -147,13 +154,13 @@ data_name:  data
         ;
 
 expr_cont:
-        | expr after_exp_cont_op_noexpr after_exp_cont
-        | expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 data_cont:
-        | data_expr after_exp_cont_op_noexpr after_exp_cont
-        | data_expr where_opt after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr after_exp_cont_op_noexpr after_exp_cont
+        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 update: TOK_UPDATE[tk1] colref_exact TOK_SET[tk2] expr_list {
@@ -186,10 +193,6 @@ sql_no_parens:
         | if_else
         | _while
         | _label
-        | command error {
-            sqli_store_data(ctx, &$command);
-            yyclearin;
-        }
         ;
 
 sql_parens: sql_no_parens
@@ -198,23 +201,23 @@ sql_parens: sql_no_parens
 
 colref_exact:
         data_name {
-            sqli_store_data(ctx, &$data_name);
+            sqli_token_data_destructor(&$data_name);
         }
         | data_name[tname] '.'[u1] data_name[colname] {
-            sqli_store_data(ctx, &$tname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$tname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
         }
         | data_name[dname] '.'[u1] data_name[tname] '.'[u2] data_name[colname] {
-            sqli_store_data(ctx, &$dname);
-            sqli_store_data(ctx, &$tname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$dname);
+            sqli_token_data_destructor(&$tname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
             YYUSE($u2);
         }
         | data_name[dname] '.'[u1] '.'[u2] data_name[colname] {
-            sqli_store_data(ctx, &$dname);
-            sqli_store_data(ctx, &$colname);
+            sqli_token_data_destructor(&$dname);
+            sqli_token_data_destructor(&$colname);
             YYUSE($u1);
             YYUSE($u2);
         }
@@ -258,49 +261,113 @@ within_opt:
         }
         ;
 
-expr_common:
-          func over_opt within_opt
-        | important_operator expr {
-            sqli_store_data(ctx, &$important_operator);
+logical_expr: noop_expr logical_operator noop_expr {
+            sqli_store_data(ctx, &$logical_operator);
         }
-        | operator expr {
+        | noop_expr TOK_OR2[tk] noop_expr {
+            sqli_token_data_destructor(&$tk);
+        }
+        | noop_expr TOK_IS[tk] TOK_NAME[name] {
+            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$name);
+        }
+        | noop_expr TOK_IS[tk1] TOK_NOT[tk2] TOK_NAME[name] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_token_data_destructor(&$name);
+        }
+        | noop_expr '='[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
         }
+        | TOK_NOT[operator] logical_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | TOK_EXIST[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | noop_expr TOK_IN[tk] '('[u1] expr_list ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | noop_expr TOK_IN[tk] '('[u1] select ')'[u2] {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | '('[u1] logical_expr ')'[u2] {
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        ;
+
+expr_common:
+          func over_opt within_opt
+        | noop_expr important_operator noop_expr {
+            sqli_store_data(ctx, &$important_operator);
+        }
+        | noop_expr operator noop_expr {
+            sqli_token_data_destructor(&$operator);
+        }
+        | '-'[operator] noop_expr {
+            sqli_token_data_destructor(&$operator);
+        }
+        | '+'[operator] noop_expr {
+            sqli_token_data_destructor(&$operator);
+        }
+        | noop_expr ':'[u1] '='[operator] noop_expr {
+            YYUSE($u1);
+            sqli_token_data_destructor(&$operator);
+        }
+        | TOK_BINARY[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | TOK_OUTFILE[operator] noop_expr {
+            sqli_store_data(ctx, &$operator);
+        }
+        | TOK_MATCH[operator] noop_expr TOK_AGAINST[tk] noop_expr {
+            sqli_store_data(ctx, &$operator);
+            sqli_store_data(ctx, &$tk);
+        }
+        | waitfor_delay
         | '('[tk] select ')'[u1] alias_opt {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
         }
-        | '('[tk] expr_list ')'[u1] {
-            sqli_store_data(ctx, &$tk);
+        | '('[u1] expr_list ')'[u2] {
             YYUSE($u1);
+            YYUSE($u2);
+        }
+        | '('[u1] expr_list {
+          YYUSE($u1);
         }
         | '('[tk] error {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
-        | '('[tk] error ')'[u1] {
-            sqli_store_data(ctx, &$tk);
+        | '('[u1] error ')'[u2] {
             YYUSE($u1);
+            YYUSE($u2);
         }
-        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+        | TOK_CASE[tk1] TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_END[tk4] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
         }
-        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_END[tk4] {
+        | TOK_CASE[tk1] noop_expr TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_END[tk4] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
         }
-        | TOK_CASE[tk1] TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END[tk5] {
+        | TOK_CASE[tk1] TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_ELSE[tk4] noop_expr TOK_END[tk5] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
             sqli_store_data(ctx, &$tk4);
             sqli_store_data(ctx, &$tk5);
         }
-        | TOK_CASE[tk1] expr TOK_WHEN[tk2] expr TOK_THEN[tk3] expr TOK_ELSE[tk4] expr TOK_END [tk5] {
+        | TOK_CASE[tk1] noop_expr TOK_WHEN[tk2] noop_expr TOK_THEN[tk3] noop_expr TOK_ELSE[tk4] noop_expr TOK_END [tk5] {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
@@ -309,14 +376,28 @@ expr_common:
         }
         ;
 
-op_expr:  expr_common
-        | op_expr important_operator expr {
-            sqli_store_data(ctx, &$important_operator);
+expr:     important_operator noop_expr {
+            $$ = $important_operator;
         }
-        | op_expr operator expr {
-            sqli_token_data_destructor(&$operator);
+        | operator noop_expr {
+            $$ = $operator;
         }
-        | op_expr post_exprs
+        | logical_operator noop_expr {
+            $$ = $logical_operator;
+        }
+        | '='[operator] noop_expr {
+            $$ = $operator;
+        }
+        | TOK_IS[tk] TOK_NAME[name] {
+            sqli_token_data_destructor(&$name);
+            $$ = $tk;
+        }
+        | TOK_IS[tk1] TOK_NOT[tk2] TOK_NAME[name] {
+            sqli_token_data_destructor(&$tk2);
+            sqli_token_data_destructor(&$name);
+            $$ = $tk1;
+        }
+        | expr post_exprs
         ;
 
 post_expr_tk:
@@ -345,11 +426,12 @@ func_name:  colref_exact
         | TOK_DATABASE
         | TOK_IF
         | TOK_REPLACE
+        | TOK_LIKE
         ;
 
 expr_list:
-          expr
-        | expr_list ','[u1] expr {YYUSE($u1);}
+          noop_expr
+        | expr_list ','[u1] noop_expr {YYUSE($u1);}
         ;
 
 expr_list_opt:
@@ -357,9 +439,18 @@ expr_list_opt:
         ;
 
 func_args_list:
-          expr
-        | func_args_list ','[u1] expr {YYUSE($u1);}
-        | error
+          noop_expr
+        | noop_expr TOK_AS[tk] data_name[type] {
+            sqli_token_data_destructor(&$tk);
+            sqli_token_data_destructor(&$type);
+        }
+        | noop_expr TOK_AS[tk] data_name[type] '('[u1] noop_expr ')'[u2] {
+            sqli_token_data_destructor(&$tk);
+            sqli_token_data_destructor(&$type);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | func_args_list ','[u1] noop_expr {YYUSE($u1);}
         ;
 
 func_args_modifier_tk:
@@ -399,69 +490,71 @@ func_args:  '('[u1] func_distinct_opt ')'[u2] {
         }
         ;
 
-func:     func_name func_args {
-            struct sqli_token_arg_data key = {
-                .value = {CSTR_LEN("FUNC")},
-                .flags = SQLI_KEY_INSTR,
-                .tok = TOK_FUNC,
-            };
-            sqli_store_data(ctx, &key);
-        }
+func:     func_name func_args
         ;
 
-data_expr: colref_exact
+noop_expr: expr_common
+        | logical_expr
+        | colref_exact
         | colref_asterisk
-        | data_expr important_operator expr {
-            sqli_store_data(ctx, &$important_operator);
+        | TOK_NUM {
+            sqli_token_data_destructor(&$TOK_NUM);
         }
-        | data_expr operator expr {
-            sqli_token_data_destructor(&$operator);
-        }
-        | data_expr post_exprs
-        ;
-
-expr:     expr_common
-        | data_expr
-        | expr important_operator expr {
-            sqli_store_data(ctx, &$important_operator);
-        }
-        | expr operator expr {
-            sqli_token_data_destructor(&$operator);
-        }
-        | expr post_exprs
+        | noop_expr post_exprs
         ;
 
 operator: TOK_OPERATOR
+        | '+'
+        | '-'
         | '*'
-        | '='
         | '.'
-        | ':'
+        | ':'[tk1] ':'[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         ;
 
-important_operator: TOK_OR
+logical_operator: TOK_OR
         | TOK_AND
-        | TOK_IS
-        | TOK_NOT
-        | TOK_DIV
-        | TOK_MOD
-        | TOK_XOR
+        | TOK_NOT[tk1] TOK_IN[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_REGEXP
+        | TOK_NOT[tk1] TOK_REGEXP[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_BETWEEN
+        | TOK_NOT[tk1] TOK_BETWEEN[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_LIKE
+        | TOK_NOT[tk1] TOK_LIKE[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
+        | TOK_SOUNDS[tk1] TOK_LIKE[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_RLIKE
-        | TOK_WAITFOR
-        | TOK_DELAY
-        | TOK_IN
-        | TOK_BINARY
+        | TOK_NOT[tk1] TOK_RLIKE[tk2] {
+            sqli_token_data_destructor(&$tk1);
+            $$ = $tk2;
+        }
         | TOK_SOUNDS
         | TOK_INTO
-        | TOK_OUTFILE
-        | TOK_MATCH
-        | TOK_AGAINST
+        ;
+
+important_operator: TOK_DIV
+        | TOK_MOD
+        | TOK_XOR
+        | TOK_BINARY
         | TOK_COLLATE
-        | TOK_EXIST
-        | TOK_AS
         | TOK_UESCAPE
+        | TOK_USING
         ;
 
 select_distinct_opt:
@@ -470,8 +563,7 @@ select_distinct_opt:
         ;
 
 select_arg:
-          expr alias_opt
-        | error
+          noop_expr alias_opt
         ;
 
 select_list: select_arg
@@ -479,32 +571,44 @@ select_list: select_arg
         ;
 
 top_opt:
-        | TOK_TOP[tk] data_name[data] percent_opt {
+        | TOK_TOP[tk] TOK_NUM[data] percent_opt {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$data);
         }
-        | TOK_TOP[tk] '('[u1] expr ')'[u2] percent_opt {
+        | TOK_TOP[tk] '('[u1] noop_expr ')'[u2] percent_opt {
+            sqli_store_data(ctx, &$tk);
+            YYUSE($u1);
+            YYUSE($u2);
+        }
+        | TOK_FIRST[tk] TOK_NUM[data] {
+            sqli_store_data(ctx, &$tk);
+            sqli_store_data(ctx, &$data);
+        }
+        | TOK_FIRST[tk] '('[u1] noop_expr ')'[u2] {
             sqli_store_data(ctx, &$tk);
             YYUSE($u1);
             YYUSE($u2);
         }
         ;
 
-select_args: select_distinct_opt
-        | select_distinct_opt top_opt '*'[key] {
+select_args: select_distinct_opt top_opt '*'[key] {
             sqli_store_data(ctx, &$key);
         }
         | select_distinct_opt top_opt select_list
+        | top_opt select_distinct_opt '*'[key] {
+            sqli_store_data(ctx, &$key);
+        }
+        | top_opt select_distinct_opt select_list
         ;
 
 as_opt:
         | TOK_AS[tk] {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
         ;
 
 alias: as_opt data_name[data] {
-            sqli_store_data(ctx, &$data);
+            sqli_token_data_destructor(&$data);
         }
         ;
 
@@ -546,7 +650,7 @@ join_qual:
             YYUSE($u1);
             YYUSE($u2);
         }
-        | TOK_ON[tk] expr {
+        | TOK_ON[tk] noop_expr {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -574,7 +678,7 @@ from_opt:
         ;
 
 where_opt:
-        | TOK_WHERE[key] expr {
+        | TOK_WHERE[key] noop_expr {
             sqli_store_data(ctx, &$key);
         }
         ;
@@ -587,7 +691,7 @@ group_opt:
         ;
 
 having_opt:
-        | TOK_HAVING[tk1] expr {
+        | TOK_HAVING[tk1] noop_expr {
             sqli_store_data(ctx, &$tk1);
         }
         ;
@@ -602,8 +706,8 @@ order:
         ;
 
 sort_list:
-          expr order
-        | sort_list ','[u1] expr order {YYUSE($u1);}
+          noop_expr order
+        | sort_list ','[u1] noop_expr order {YYUSE($u1);}
         | error
         ;
 
@@ -634,9 +738,7 @@ select_extra_tk:
         ;
 
 select_extra:
-        select_extra_tk[tk] expr_list_opt {
-            sqli_store_data(ctx, &$tk);
-        }
+        select_extra_tk expr_list_opt
         ;
 
 select_extras: select_extra
@@ -689,7 +791,7 @@ union_tk:
         ;
 
 union_c: union_tk[tk] {
-            sqli_store_data(ctx, &$tk);
+            sqli_token_data_destructor(&$tk);
         }
         ;
 
@@ -795,12 +897,12 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '='[u1] expr {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '='[u1] noop_expr {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] TOK_NUM[len] ')'[u2] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
@@ -813,7 +915,7 @@ declare: TOK_DECLARE[tk] var_list as_opt data_name[type] {
             sqli_store_data(ctx, &$tk2);
             sqli_store_data(ctx, &$tk3);
         }
-        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] data_name[len] ')'[u2] '='[u3] expr {
+        | TOK_DECLARE[tk] var_list as_opt data_name[type] '('[u1] TOK_NUM[len] ')'[u2] '='[u3] noop_expr {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$type);
             YYUSE($u1);
@@ -883,7 +985,7 @@ delete_modifier_opt:
         }
         ;
 
-limit_op: TOK_LIMIT[tk] data_name[row_count] {
+limit_op: TOK_LIMIT[tk] TOK_NUM[row_count] {
             sqli_store_data(ctx, &$tk);
             sqli_store_data(ctx, &$row_count);
         }
@@ -908,7 +1010,7 @@ _delete:  TOK_DELETE[tk1] delete_modifier_opt TOK_FROM[key] from_list where_opt 
         }
         ;
 
-print:    TOK_PRINT[tk] expr {
+print:    TOK_PRINT[tk] noop_expr {
             sqli_store_data(ctx, &$tk);
         }
         ;
@@ -944,8 +1046,8 @@ load:
         }
         ;
 
-set:      TOK_SET[tk] expr {
-            sqli_store_data(ctx, &$tk);
+set:      TOK_SET[tk] noop_expr {
+            sqli_token_data_destructor(&$tk);
         }
         ;
 
@@ -991,26 +1093,24 @@ alter: TOK_ALTER[tk1] TOK_DATABASE[tk2] data_name[name] TOK_SET[tk3] TOK_RECOVER
         }
         ;
 
-if_else:  TOK_IF[tk1] expr sql_parens {
+if_else:  TOK_IF[tk1] noop_expr sql_parens {
             sqli_store_data(ctx, &$tk1);
         }
-        | TOK_IF[tk1] expr sql_parens TOK_ELSE[tk2] sql_parens {
+        | TOK_IF[tk1] noop_expr sql_parens TOK_ELSE[tk2] sql_parens {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
         ;
 
-_while:  TOK_WHILE[tk1] expr sql_parens {
+_while:  TOK_WHILE[tk1] noop_expr sql_parens {
             sqli_store_data(ctx, &$tk1);
         }
         ;
 
-_label:   TOK_LABEL[tk] {
-            YYUSE(&$tk);
+_label:   TOK_NAME[tk] ':'[u1] {
+            sqli_token_data_destructor(&$tk);
+            YYUSE(&$u1);
         }
-        ;
-
-command:  TOK_ATTACH
         ;
 
 close_multiple_parens: ')'[u1] {YYUSE($u1);}
@@ -1047,7 +1147,9 @@ after_exp_cont_op_noexpr:
         ;
 
 after_exp_cont_op:
-        expr after_exp_cont_op_noexpr
+        expr[tk] after_exp_cont_op_noexpr {
+            sqli_store_data(ctx, &$tk);
+        }
         | where_opt after_exp_cont_op_noexpr
         ;
 
@@ -1061,9 +1163,7 @@ after_exp_cont:
         ;
 
 start_rce_cont: close_multiple_parens_opt semicolons_opt multiple_sqls
-        | close_multiple_parens_opt op_expr after_exp_cont
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont
-        | op_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
 
 %%

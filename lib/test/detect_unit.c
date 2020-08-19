@@ -118,13 +118,14 @@ Tsqli_operators(void)
         {CSTR_LEN("1' + BINARY '1")},
         {CSTR_LEN("1' INTO OUTFILE '1")},
         {CSTR_LEN("1 AND 1 SOUNDS LIKE 1")},
-        {CSTR_LEN("1 MATCH(col) AGAINST('text')")},
+        {CSTR_LEN("1 + MATCH(col) AGAINST('text')")},
         {CSTR_LEN("1 AND EXIST(SELECT 1)")},
         {CSTR_LEN("1 AND xmlelement('user', "
                   "login || ':' || pass).getStringVal()")},
         {CSTR_LEN("1 AND FileToClob('/etc/passwd', "
                   "'server')::html")},
         {CSTR_LEN("1 AND U&'pgsql evade' uescape '!'")},
+        {CSTR_LEN("1 NOT BETWEEN 0 AND 1")},
     );
 }
 
@@ -147,6 +148,7 @@ static void
 Tsqli_top(void)
 {
     s_sqli_attacks({CSTR_LEN("SELECT TOP 5 * FROM table_name")});
+    s_sqli_attacks({CSTR_LEN("SELECT FIRST 5 * FROM table_name")});
 }
 
 static void
@@ -180,7 +182,7 @@ Tsqli_left_func(void)
 static void
 Tsqli_func(void)
 {
-    s_sqli_attacks({CSTR_LEN("1; DBMS_LOCK.SLEEP()")});
+    s_sqli_not_attacks({CSTR_LEN("1; DBMS_LOCK.SLEEP()")});
 }
 
 static void
@@ -239,7 +241,7 @@ Tsqli_shutdown(void)
 static void
 Tsqli_into_outfile(void)
 {
-    s_sqli_attacks({CSTR_LEN("SELECT 1 FROM table_name INTO OUTFILE 1")});
+    s_sqli_attacks({CSTR_LEN("SELECT 1 FROM table_name INTO OUTFILE 'file'")});
 }
 
 static void
@@ -285,6 +287,7 @@ Tsqli_select(void)
         {CSTR_LEN("SELECT lead(col, 0) OVER (ORDER BY col) FROM table_name")},
         {CSTR_LEN("SELECT listagg(col,', ') WITHIN GROUP "
                   "(ORDER BY col) from table_name")},
+        {CSTR_LEN("select 1, open, language, percent")},
     );
 }
 
@@ -344,7 +347,7 @@ Tsqli_procedure_analyse(void)
 static void
 Tsqli_set(void)
 {
-    s_sqli_attacks({CSTR_LEN("SET @t=1")});
+    s_sqli_not_attacks({CSTR_LEN("SET @t=1")});
 }
 
 static void
@@ -501,6 +504,12 @@ Tsqli_label(void)
 }
 
 static void
+Tsqli_comment(void)
+{
+    s_sqli_attacks({CSTR_LEN("/*!SELECT*/ 1")});
+}
+
+static void
 Tsqli_data_name(void)
 {
     s_sqli_attacks(
@@ -510,6 +519,12 @@ Tsqli_data_name(void)
         {CSTR_LEN("SELECT replace('abc','b','d')")},
         {CSTR_LEN("SELECT {db.table_name.id} from db.table_name")},
     );
+}
+
+static void
+Tsqli_regress_zero_realloc(void)
+{
+    s_sqli_not_attacks({CSTR_LEN("\"''\"")});
 }
 
 static void
@@ -716,6 +731,8 @@ main(void)
         {"dot_e_dot", Tsqli_dot_e_dot},
         {"label", Tsqli_label},
         {"data_name", Tsqli_data_name},
+        {"regress_zero_realloc", Tsqli_regress_zero_realloc},
+        {"comment", Tsqli_comment},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
