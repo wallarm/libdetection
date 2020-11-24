@@ -680,6 +680,16 @@ Tpt_boot_ini(void)
     );
 }
 
+static void
+Tpt_inj_start_with_sep(void)
+{
+    s_pt_attacks(
+        {CSTR_LEN("///../../etc///passwd")},
+        {CSTR_LEN("///..\\..\\etc///passwd")},
+        {CSTR_LEN("\\../\\../etc/\\passwd")},
+    );
+}
+
 int
 main(void)
 {
@@ -759,6 +769,7 @@ main(void)
     };
     CU_TestInfo pt_tests[] = {
         {"boot_ini", Tpt_boot_ini},
+        {"inj_start_with_sep", Tpt_inj_start_with_sep},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
