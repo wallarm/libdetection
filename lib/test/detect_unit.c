@@ -622,6 +622,8 @@ Tbash_commands(void)
         {CSTR_LEN("if [ 1 -eq 2 ];  then echo equal ; else echo 'not equal' ; fi")},
         {CSTR_LEN("(ls -a)")},
         {CSTR_LEN("{ ls -a; }")},
+        {CSTR_LEN("/proc/self/exe -c id")},
+        {CSTR_LEN("sg root -c id")},
     );
 }
 
@@ -696,7 +698,17 @@ Tbash_substitute(void)
     s_bash_attacks(
         {CSTR_LEN("e$(FOO='BAR BAR BAR' echo ch)o test")},
         {CSTR_LEN("foo <(FOO='BAR BAR BAR' ls)")},
-        {CSTR_LEN("foo >(FOO='BAR BAR BAR' last)")},
+        {CSTR_LEN("c$()at /e??/p?????")},
+        {CSTR_LEN(";``id")},
+    );
+}
+
+static void
+Tbash_globbing(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("/???/??t /???/??ss??")},
+        {CSTR_LEN("{cat,/etc/os-release}")},
     );
 }
 
@@ -803,6 +815,7 @@ main(void)
         {"redirection", Tbash_redirection},
         {"inj", Tbash_inj},
         {"substitute", Tbash_substitute},
+        {"globbing", Tbash_globbing},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo pt_tests[] = {
