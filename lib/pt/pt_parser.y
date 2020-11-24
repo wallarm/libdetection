@@ -32,6 +32,7 @@ pt_parser_error(struct pt_detect_ctx *ctx, const char *s)
 context: start_pt
         ;
 start_pt: TOK_START_PT_INJ inj
+        | TOK_START_PT_INJ seps inj
         ;
 
 ssep: TOK_SEP[k] {
