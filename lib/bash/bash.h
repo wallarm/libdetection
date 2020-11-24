@@ -22,6 +22,16 @@ struct bash_token_arg_data {
     int tok;
 };
 
+struct var {
+    struct detect_str name;
+    struct detect_str val;
+
+    RB_ENTRY(var) link;
+};
+
+RB_HEAD(vars_tree, var);
+WRB_PROTOTYPE(vars_tree, var, struct detect_str *);
+
 struct bash_detect_lexer_ctx {
     unsigned inword:1;
 
@@ -29,6 +39,8 @@ struct bash_detect_lexer_ctx {
     int state;
     int condition;
     struct detect_buf buf;
+    struct detect_buf var_name;
+    struct vars_tree vars;
 };
 
 #include "bash_parser.h"

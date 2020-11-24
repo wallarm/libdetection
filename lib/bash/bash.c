@@ -2,6 +2,11 @@
 #include <string.h>
 #include <assert.h>
 
+#define VAR2KEY(var) (&(var)->name)
+WRB_GENERATE(
+    vars_tree, var, struct detect_str *,
+    link, detect_str_cmp, VAR2KEY);
+
 static const struct {
     struct detect_ctx_desc desc;
     enum bash_parser_tokentype start_tok;
@@ -68,12 +73,27 @@ bash_lexer_init(struct bash_detect_lexer_ctx *lexer)
     memset(lexer, 0, sizeof(*lexer));
     detect_re2c_init(&lexer->re2c);
     lexer->state = -1;
+    RB_INIT(&lexer->vars);
+
+    struct var *var = calloc(1, sizeof(*var));
+    var->name.str = "IFS";
+    var->name.len = 3;
+    var->val.str = " ";
+    var->val.len = 1;
+    RB_INSERT(vars_tree, &lexer->vars, var);
 }
 
 static void
 bash_lexer_deinit(struct bash_detect_lexer_ctx *lexer)
 {
+    struct detect_parser_info *v, *v_tmp;
+
+    WRB_FOREACH_PDFS(v, vars_tree, &lexer->vars, v_tmp) {
+        free(v);
+    }
+
     detect_buf_deinit(&lexer->buf);
+    detect_buf_deinit(&lexer->var_name);
     detect_re2c_deinit(&lexer->re2c);
 }
 

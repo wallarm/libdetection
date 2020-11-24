@@ -572,6 +572,10 @@ Tbash_simplest(void)
         {CSTR_LEN("VAR=VAL l$1s")},
         {CSTR_LEN("VAR=VAL l$name's'")},
         {CSTR_LEN("VAR=VAL l${name}s")},
+        {CSTR_LEN("$-id")},
+        {CSTR_LEN("$*id")},
+        {CSTR_LEN("(aa=d;i$aa)")},
+        {CSTR_LEN("cat$IFS/etc/os-release")},
     );
 }
 
