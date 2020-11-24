@@ -690,6 +690,14 @@ Tpt_inj_start_with_sep(void)
     );
 }
 
+static void
+Tpt_travs_names_root(void)
+{
+    s_pt_attacks(
+        {CSTR_LEN("../\\windows/\\system32/\\drivers/\\etc/\\hosts")},
+    );
+}
+
 int
 main(void)
 {
@@ -770,6 +778,7 @@ main(void)
     CU_TestInfo pt_tests[] = {
         {"boot_ini", Tpt_boot_ini},
         {"inj_start_with_sep", Tpt_inj_start_with_sep},
+        {"travs_names_root", Tpt_travs_names_root},
         CU_TEST_INFO_NULL
     };
     CU_SuiteInfo suites[] = {
