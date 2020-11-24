@@ -756,7 +756,7 @@ select_extras_opt:
         ;
 
 procedure:
-          TOK_PROCEDURE[tk1] func expr {
+          TOK_PROCEDURE[tk1] func {
             sqli_store_data(ctx, &$tk1);
         }
         ;
