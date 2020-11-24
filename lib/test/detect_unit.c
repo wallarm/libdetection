@@ -159,6 +159,7 @@ static void
 Tsqli_identifier_quote(void)
 {
     s_sqli_attacks({CSTR_LEN("SELECT * FROM `select`")});
+    s_sqli_attacks({CSTR_LEN("SELECT * FROM [select\nfrom]")});
 }
 
 static void
