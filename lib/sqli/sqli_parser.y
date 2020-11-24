@@ -90,7 +90,7 @@ context:  start_data
         | start_rce
         ;
 
-start_data: TOK_START_DATA data_cont
+start_data: TOK_START_DATA expr_cont
         | TOK_START_DATA noop_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
@@ -98,7 +98,7 @@ start_data: TOK_START_DATA data_cont
 
 start_string: TOK_START_STRING {
             ctx->lexer.instring = true;
-        } data_cont
+        } expr_cont
         ;
 
 data:     TOK_DATA
@@ -154,11 +154,6 @@ data_name:  data
         ;
 
 expr_cont:
-        | noop_expr after_exp_cont_op_noexpr after_exp_cont
-        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
-        ;
-
-data_cont:
         | noop_expr after_exp_cont_op_noexpr after_exp_cont
         | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
@@ -620,12 +615,12 @@ alias_opt:
         | alias
         ;
 
-table_ref:
-          func alias_opt
-        | colref_exact alias_opt
-        | '('[u1] select ')'[u2] alias_opt {YYUSE($u1); YYUSE($u2);}
+table_ref2:
+          func
+        | colref_exact
+        | '('[u1] select ')'[u2] {YYUSE($u1); YYUSE($u2);}
         | joined_table
-        | '('[u1] joined_table ')'[u2] alias {YYUSE($u1); YYUSE($u2);}
+        | '('[u1] joined_table ')'[u2] {YYUSE($u1); YYUSE($u2);}
         ;
 
 join_type:
@@ -666,9 +661,12 @@ joined_table:
         }
         ;
 
-from_list: table_ref
-        | from_list ','[u1] table_ref {YYUSE($u1);}
+table_ref: table_ref2 alias_opt
         ;
+
+from_list: table_ref
+      | from_list ','[u1] table_ref {YYUSE($u1);}
+      ;
 
 from_opt:
         | TOK_FROM[key] from_list {
@@ -1154,13 +1152,16 @@ after_exp_cont_op:
         expr[tk] after_exp_cont_op_noexpr {
             sqli_store_data(ctx, &$tk);
         }
-        | where_opt after_exp_cont_op_noexpr
+        | alias_opt from_opt where_opt after_exp_cont_op_noexpr
         ;
 
 after_exp_cont:
         close_multiple_parens_opt semicolons_opt multiple_sqls
         | close_multiple_parens after_exp_cont_op after_exp_cont
-        | close_multiple_parens ','[u1] select_list from_opt where_opt after_exp_cont {
+        | close_multiple_parens alias_opt ','[u1] select_list from_opt where_opt after_exp_cont {
+            YYUSE($u1);
+        }
+        | close_multiple_parens alias_opt ','[u1] from_list where_opt after_exp_cont {
             YYUSE($u1);
         }
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont

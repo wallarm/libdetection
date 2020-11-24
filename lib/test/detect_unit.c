@@ -532,6 +532,17 @@ Tsqli_regress_zero_realloc(void)
 }
 
 static void
+Tsqli_broken_from_select_list(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("1) AS t WHERE 1=1")},
+        {CSTR_LEN("1) AS t1, table AS t2 WHERE 1=1")},
+        {CSTR_LEN("1) AS n FROM db.table WHERE 1=1")},
+        {CSTR_LEN("1) AS n1, name AS n2 FROM db.table WHERE 1=1")},
+    );
+}
+
+static void
 Tbash_constraints(void)
 {
     CU_ASSERT_EQUAL(bash_lexer_test(), 0);
@@ -763,6 +774,7 @@ main(void)
         {"data_name", Tsqli_data_name},
         {"regress_zero_realloc", Tsqli_regress_zero_realloc},
         {"comment", Tsqli_comment},
+        {"select_list", Tsqli_broken_from_select_list},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
