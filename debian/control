@@ -36,7 +36,7 @@ Description: Utilities for signature-free approach library to detect attacks
  require attacks samples to learn.
 
 Package: libdetection1
-Architecture: amd64
+Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Signature-free approach library to detect attacks
