@@ -10,7 +10,8 @@ BuildPackage(
         'xenial',
         'bionic',
         'stretch',
-        'buster'
+        'buster',
+        'focal'
     ],
     target_repos: [
         'wallarm-node': [
