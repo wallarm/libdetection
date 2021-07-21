@@ -14,7 +14,7 @@ BuildPackage(
     ],
     target_repos: [
         'wallarm-node': [
-		release: '3.2',
+		release: '3.3',
 		dev: true
 	]
     ],

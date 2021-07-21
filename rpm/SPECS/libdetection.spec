@@ -1,6 +1,6 @@
 Name: libdetection1
 Version: 1.2.1
-Release: 11
+Release: 12
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
