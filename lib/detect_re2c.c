@@ -34,7 +34,7 @@ detect_re2c_chk_switch_to_data(
     const unsigned char *data_copied_ptr;
 
     data_since_start = tmp_data_end - ctx->start;
-    if (ctx->data_copied < data_since_start)
+    if (!ctx->data || (ctx->data_copied < data_since_start))
         return (false);
 
     data_copied_ptr = ctx->data + ctx->data_copied;
