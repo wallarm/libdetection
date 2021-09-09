@@ -1,0 +1,50 @@
+#!groovy
+
+BuildParametrized(
+    buildEnvironment: [
+        name: "bionic",
+        image: 'wallarm-dkr.jfrog.io/package-builder/bionic:NODE-3884',
+        args: [
+            'REPOS=',
+            'DEPS_REPOS=ubuntu-toolchain',
+            'EXTRA_VERSION=dkr.b0',
+            'SOURCES=all',
+            'TARGET_REPOS=wallarm-node',
+            'RELEASE_wallarm_node=3.3'
+        ],
+        postConfig: [
+            "SKIP_PACKAGING=1 /usr/local/bin/build.sh",
+            "apt install -y llvm-10 clang-10"
+        ]
+    ],
+    buildActions: [
+        [
+            name: 'ASAN',
+            commands: [
+                "mkdir ../build.asan",
+                "cd ../build.asan && cmake -DCMAKE_C_COMPILER=clang-10 -DCMAKE_C_FLAGS='-fsanitize=address -Wno-unknown-attributes'  -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address' ../build",
+                "cd ../build.asan && make",
+                "cd ../build.asan && lib/test/unit 2>&1 | ( ! grep -q Sanitizer  ) || (lib/test/unit && false)"
+            ]
+        ], [
+            name: 'MSAN',
+            commands: [
+                "mkdir ../build.msan",
+                "cd ../build.msan && cmake -DCMAKE_C_COMPILER=clang-10 -DCMAKE_C_FLAGS='-fsanitize=memory -Wno-unknown-attributes'  -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=memory' ../build",
+                "cd ../build.msan && make",
+                "cd ../build.msan && lib/test/unit 2>&1 | ( ! grep -q Sanitizer  ) || (lib/test/unit && false)"
+            ]
+        ], [
+            name: 'USAN',
+            commands: [
+                "mkdir ../build.usan",
+                "cd ../build.usan && cmake -DCMAKE_C_COMPILER=clang-10 -DCMAKE_C_FLAGS='-fsanitize=undefined -Wno-unknown-attributes'  -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=undefined' ../build",
+                "cd ../build.usan && make",
+                "cd ../build.usan && lib/test/unit 2>&1 | ( ! grep -q Sanitizer  ) || (lib/test/unit && false)"
+            ]
+        ]
+    ],
+    notify: [
+        email: 'node-dev@wallarm.com'
+    ]
+)
