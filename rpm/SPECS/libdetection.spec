@@ -1,6 +1,6 @@
 Name: libdetection1
 Version: 1.2.1
-Release: 12
+Release: wallarm3.3+1%{?dist}
 Summary: Signature-free approach library to detect attacks
 
 License: BSD
