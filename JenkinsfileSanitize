@@ -10,7 +10,7 @@ BuildParametrized(
             'EXTRA_VERSION=dkr.b0',
             'SOURCES=all',
             'TARGET_REPOS=wallarm-node',
-            'RELEASE_wallarm_node=3.3'
+            'RELEASE_wallarm_node=3.5'
         ],
         postConfig: [
             "SKIP_PACKAGING=1 /usr/local/bin/build.sh",
