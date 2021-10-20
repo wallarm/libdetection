@@ -1,6 +1,10 @@
 %{
 #include "bash.h"
 
+#if !defined(YYUSE)
+#define YYUSE(arg) YY_USE(arg)
+#endif
+
 static void
 bash_parser_error(struct bash_detect_ctx *ctx, const char *s)
 {
