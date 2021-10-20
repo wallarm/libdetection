@@ -11,6 +11,7 @@ BuildPackage(
         'bionic',
         'stretch',
         'buster',
+        'bullseye',
         'focal'
     ],
     target_repos: [
