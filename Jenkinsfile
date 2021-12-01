@@ -5,6 +5,7 @@ BuildPackage(
         original: 'all'
     ],
     dists: [
+        'bullseye',
         'centos6',
         'centos7',
         'centos8',

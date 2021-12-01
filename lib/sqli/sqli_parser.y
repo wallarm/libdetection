@@ -1,6 +1,10 @@
 %{
 #include "sqli.h"
 
+#if !defined(YYUSE)
+#define YYUSE(arg) YY_USE(arg)
+#endif
+
 static void
 sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 {
