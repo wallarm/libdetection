@@ -4,6 +4,7 @@
 #include "detect.h"
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 struct detect_buf {
     struct detect_str data;
