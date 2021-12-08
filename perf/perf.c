@@ -6,9 +6,9 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-#define ERR(fmt, ...) fprintf(stderr, fmt"\n", ##__VA_ARGS__)
+#define ERR(fmt, ...)     fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 
-#define MAXLINE 4096
+#define MAXLINE           4096
 #define MAX_DISABLED_CTXS 8
 
 enum perf_action {
@@ -28,25 +28,20 @@ s_perf_dump_result(struct detect *detect)
 
         desc = detect_ctx_get_desc(detect, i);
         res = (typeof(res))detect_ctx_get_result(detect, i);
-        printf("[%s]%.*s:%s\n",
-               desc->rce ? "rce" : "inj",
-               (int)desc->name.len, desc->name.str,
-               res->parse_error ? "error:" : "");
+        printf(
+            "[%s]%.*s:%s\n", desc->rce ? "rce" : "inj", (int)desc->name.len, desc->name.str,
+            res->parse_error ? "error:" : "");
         if (!RB_EMPTY(&res->stat_by_flags)) {
             struct detect_flag_stat *fs;
 
             printf(" flags:\n");
-            RB_FOREACH(fs, detect_flag_stat_tree, &res->stat_by_flags) {
+            RB_FOREACH (fs, detect_flag_stat_tree, &res->stat_by_flags) {
                 struct detect_token_stat *ts;
 
-                printf("  %.*s:%zu:\n  ",
-                       (int)fs->flag_name.len, fs->flag_name.str,
-                       fs->count);
+                printf("  %.*s:%zu:\n  ", (int)fs->flag_name.len, fs->flag_name.str, fs->count);
 
-                RB_FOREACH(ts, detect_token_stat_tree, &fs->stat_by_tokens) {
-                    printf(" %.*s:%zu",
-                           (int)ts->token_name.len, ts->token_name.str,
-                           ts->count);
+                RB_FOREACH (ts, detect_token_stat_tree, &fs->stat_by_tokens) {
+                    printf(" %.*s:%zu", (int)ts->token_name.len, ts->token_name.str, ts->count);
                 }
                 printf("\n");
             }
@@ -55,10 +50,10 @@ s_perf_dump_result(struct detect *detect)
             struct detect_data *dd;
 
             printf(" datas:\n");
-            STAILQ_FOREACH(dd, &res->datas, link) {
-                printf("  kind:%.*s value:%.*s\n",
-                       (int)dd->kind.len, dd->kind.str,
-                       (int)dd->value.len, dd->value.str);
+            STAILQ_FOREACH (dd, &res->datas, link) {
+                printf(
+                    "  kind:%.*s value:%.*s\n", (int)dd->kind.len, dd->kind.str, (int)dd->value.len,
+                    dd->value.str);
             }
         }
     }
@@ -68,10 +63,10 @@ static void
 s_report_attack(uint64_t cstr, bool has_attack, uint32_t attack_types)
 {
     if (!has_attack) {
-        printf("Test %"PRIu64": clear\n", cstr + 1);
+        printf("Test %" PRIu64 ": clear\n", cstr + 1);
         return;
     }
-    printf("Test %"PRIu64":", cstr + 1);
+    printf("Test %" PRIu64 ":", cstr + 1);
     if (!!(attack_types & DETECT_ATTACK_INJ))
         printf(" inj");
     if (!!(attack_types & DETECT_ATTACK_RCE))
@@ -82,20 +77,21 @@ s_report_attack(uint64_t cstr, bool has_attack, uint32_t attack_types)
 static void
 perf_usage(const char *progname)
 {
-    fprintf(stderr,
-            "Usage:\n"
-            "\t%s [-Pehnrv] [-p parser] [-d disabled_context]\n"
-            "\n"
-            "\t-h   Show this help message\n"
-            "\t-v   Increase verbose level\n"
-            "\t-P   List available parsers and exit\n"
-            "\t-p   Parser to use (default is sqli)\n"
-            "\t-d   Context number to disable\n"
-            "\t-e   Echo input strings\n"
-            "\t     (verbose=0: attacks only, verbose>0: all)\n"
-            "\t-r   Show small report for each input string\n"
-            "\t-n   Show total number of strings and attacks\n"
-            , progname);
+    fprintf(
+        stderr,
+        "Usage:\n"
+        "\t%s [-Pehnrv] [-p parser] [-d disabled_context]\n"
+        "\n"
+        "\t-h   Show this help message\n"
+        "\t-v   Increase verbose level\n"
+        "\t-P   List available parsers and exit\n"
+        "\t-p   Parser to use (default is sqli)\n"
+        "\t-d   Context number to disable\n"
+        "\t-e   Echo input strings\n"
+        "\t     (verbose=0: attacks only, verbose>0: all)\n"
+        "\t-r   Show small report for each input string\n"
+        "\t-n   Show total number of strings and attacks\n",
+        progname);
 }
 
 static int
@@ -105,8 +101,7 @@ perf_list_parsers(void)
     const struct detect_str *name;
 
     printf("Parsers available:\n");
-    for (list = detect_parser_list(&name); list;
-         list = detect_parser_list_next(list, &name)) {
+    for (list = detect_parser_list(&name); list; list = detect_parser_list_next(list, &name)) {
         struct detect *detect;
 
         printf("%.*s\n", (int)name->len, name->str);
@@ -118,9 +113,9 @@ perf_list_parsers(void)
                 const struct detect_ctx_desc *ctx;
 
                 ctx = detect_ctx_get_desc(detect, i);
-                printf("\tContext %u: %.*s (%s)\n",
-                       i, (int)ctx->name.len, ctx->name.str,
-                       ctx->rce ? "rce" : "inj");
+                printf(
+                    "\tContext %u: %.*s (%s)\n", i, (int)ctx->name.len, ctx->name.str,
+                    ctx->rce ? "rce" : "inj");
             }
         }
     }
@@ -223,15 +218,14 @@ main(int argc, char **argv)
 
         ctx = detect_ctx_get_desc(detect, disabled_ctxs[ictx]);
         if (ctx == NULL) {
-            ERR("Cannot get context[%u] description: %s",
-                disabled_ctxs[ictx], strerror(errno));
+            ERR("Cannot get context[%u] description: %s", disabled_ctxs[ictx], strerror(errno));
             rc = EXIT_FAILURE;
             goto done;
         }
         if (!!(rv = detect_ctx_disable(detect, disabled_ctxs[ictx]))) {
-            fprintf(stderr, "Cannot disable context %u[%.*s]: %s\n",
-                    disabled_ctxs[ictx], (int)ctx->name.len,
-                    ctx->name.str, strerror(rv));
+            fprintf(
+                stderr, "Cannot disable context %u[%.*s]: %s\n", disabled_ctxs[ictx],
+                (int)ctx->name.len, ctx->name.str, strerror(rv));
             rc = EXIT_FAILURE;
             goto done;
         }
@@ -274,9 +268,8 @@ main(int argc, char **argv)
     detect_close(detect);
     detect_deinit();
     if (print_nstr)
-        fprintf(stderr, "Got %"PRIu64" strings, %"PRIu64" attacks\n",
-                nstr, nattacks);
-  done:
+        fprintf(stderr, "Got %" PRIu64 " strings, %" PRIu64 " attacks\n", nstr, nattacks);
+done:
     if (detect_initialized)
         detect_deinit();
     free(progname);

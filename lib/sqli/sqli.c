@@ -10,6 +10,7 @@ static const struct {
     enum sqli_parser_tokentype start_tok;
     bool var_start_with_num;
 } sqli_ctxs[] = {
+    // clang-format off
     [SQLI_CTX_DATA] = {
         .desc = {.name = {CSTR_LEN("data")}},
         .start_tok = TOK_START_DATA,
@@ -41,6 +42,7 @@ static const struct {
         .var_start_with_num = true,
     },
 };
+// clang-format on
 
 static struct detect *
 detect_sqli_open(struct detect_parser *parser)
@@ -110,8 +112,7 @@ detect_sqli_push_token(struct sqli_detect_ctx *ctx, int tok, void *tok_val)
          */
         if (ctx->detect->finish_cb != NULL)
             rv = ctx->detect->finish_cb(
-                ctx->detect, ctx->ctxnum,
-                ctx->detect->nctx - ctx->detect->nctx_finished,
+                ctx->detect, ctx->ctxnum, ctx->detect->nctx - ctx->detect->nctx_finished,
                 ctx->detect->finish_cb_arg);
         else
             rv = 0;
@@ -132,8 +133,7 @@ sqli_lexer_deinit(struct sqli_detect_lexer_ctx *lexer)
 {
     detect_buf_deinit(&lexer->buf);
     while (1) {
-        struct sqli_pending_token *token =
-            lexer->pending + lexer->pending_first;
+        struct sqli_pending_token *token = lexer->pending + lexer->pending_first;
 
         if (token->tok <= 0)
             break;
@@ -170,8 +170,7 @@ detect_sqli_start(struct detect *detect)
 
         ctx->pstate = sqli_parser_pstate_new();
         sqli_lexer_init(&ctx->lexer);
-        if (detect_sqli_push_token(
-                ctx, sqli_ctxs[ctx->type].start_tok, NULL) != 0)
+        if (detect_sqli_push_token(ctx, sqli_ctxs[ctx->type].start_tok, NULL) != 0)
             break;
     }
     return (0);
@@ -200,15 +199,13 @@ detect_sqli_stop(struct detect *detect)
 }
 
 static int
-sqli_lexer_add_data(
-    struct sqli_detect_ctx *ctx, const void *data, size_t siz, bool fin)
+sqli_lexer_add_data(struct sqli_detect_ctx *ctx, const void *data, size_t siz, bool fin)
 {
     return (detect_re2c_add_data(&ctx->lexer.re2c, data, siz, fin));
 }
 
 static int
-detect_sqli_add_data(
-    struct detect *detect, const void *data, size_t siz, bool fin)
+detect_sqli_add_data(struct detect *detect, const void *data, size_t siz, bool fin)
 {
     unsigned i;
     union SQLI_PARSER_STYPE token_arg;
@@ -239,9 +236,7 @@ detect_sqli_add_data(
 
             /* We stop parsing with success on end of data */
             if (!ctx->res.finished) {
-                if (token == 0 || token == TOK_ERROR ||
-                    (token == -EAGAIN && fin)) {
-
+                if (token == 0 || token == TOK_ERROR || (token == -EAGAIN && fin)) {
                     /* We push $end to the parser */
                     detect_sqli_push_token(ctx, 0, NULL);
                     ctx->res.finished = true;
@@ -251,22 +246,19 @@ detect_sqli_add_data(
                      * - ignore results of reduce/reduce conflicts
                      */
                     ctx->res.parse_error =
-                        (token == TOK_ERROR ||
-                         RB_EMPTY(&ctx->res.stat_by_flags)
+                        (token == TOK_ERROR || RB_EMPTY(&ctx->res.stat_by_flags)
                          /* || !ctx->has_any_tokens */);
                 }
             }
         } while (!ctx->res.finished && token != -EAGAIN);
     }
 
-  done:
+done:
     return (rv);
 }
 
 static int
-sqli_store_key(
-    struct sqli_detect_ctx *ctx,
-    struct sqli_token_arg_data *info)
+sqli_store_key(struct sqli_detect_ctx *ctx, struct sqli_token_arg_data *info)
 {
     const static struct {
         struct detect_str name;
@@ -281,17 +273,14 @@ sqli_store_key(
     for (i = 0; i < sizeof(flagnames) / sizeof(flagnames[0]); i++) {
         if (!(info->flags & flagnames[i].flag))
             continue;
-        detect_ctx_result_store_token(
-            &ctx->res, &flagnames[i].name, &info->value);
+        detect_ctx_result_store_token(&ctx->res, &flagnames[i].name, &info->value);
     }
     sqli_token_data_destructor(info);
     return (0);
 }
 
 int
-sqli_store_data(
-    struct sqli_detect_ctx *ctx,
-    struct sqli_token_arg_data *info)
+sqli_store_data(struct sqli_detect_ctx *ctx, struct sqli_token_arg_data *info)
 {
     switch (info->tok) {
     case TOK_NUM:

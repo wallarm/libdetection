@@ -3,6 +3,7 @@
 
 #include <detect/detect_parser.h>
 
-int bash_lexer_test(void);
+int
+bash_lexer_test(void);
 
 #endif

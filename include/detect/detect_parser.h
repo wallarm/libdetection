@@ -5,7 +5,7 @@
 #include "detect_buf.h"
 #include <string.h>
 
-#define DETECT_HIDDEN __attribute__ ((visibility ("hidden")))
+#define DETECT_HIDDEN __attribute__((visibility("hidden")))
 
 struct detect_parser;
 
@@ -13,8 +13,7 @@ typedef int (*detect_parser_init_func)(void);
 typedef int (*detect_parser_deinit_func)(void);
 typedef struct detect *(*detect_parser_open_func)(struct detect_parser *parser);
 typedef int (*detect_parser_close_func)(struct detect *detect);
-typedef int (*detect_parser_set_options_func)(
-    struct detect *detect, const char *options);
+typedef int (*detect_parser_set_options_func)(struct detect *detect, const char *options);
 typedef int (*detect_parser_start_func)(struct detect *detect);
 typedef int (*detect_parser_stop_func)(struct detect *detect);
 typedef int (*detect_parser_add_data_func)(
@@ -50,7 +49,7 @@ struct detect {
     unsigned nctx;
     unsigned nctx_finished;
 
-    unsigned started:1;
+    unsigned started : 1;
 };
 
 /* Alphanumeric comparison */
@@ -78,19 +77,23 @@ intdetect_str_cmp_fast(const struct detect_str *s1, const struct detect_str *s2)
     return (memcmp(s1->str, s2->str, s1->len));
 }
 
-struct detect_parser *detect_parser_find(struct detect_str *name);
+struct detect_parser *
+detect_parser_find(struct detect_str *name);
 
-int detect_instance_init(struct detect *detect, struct detect_parser *parser);
+int
+detect_instance_init(struct detect *detect, struct detect_parser *parser);
 
-int detect_ctx_result_init(struct detect_ctx_result *res);
-int detect_ctx_result_deinit(struct detect_ctx_result *res);
+int
+detect_ctx_result_init(struct detect_ctx_result *res);
+int
+detect_ctx_result_deinit(struct detect_ctx_result *res);
 
-int detect_ctx_result_store_token(
-    struct detect_ctx_result *res, const struct detect_str *flag,
-    const struct detect_str *name);
+int
+detect_ctx_result_store_token(
+    struct detect_ctx_result *res, const struct detect_str *flag, const struct detect_str *name);
 
-int detect_ctx_result_store_data(
-    struct detect_ctx_result *res, const struct detect_str *kind,
-    struct detect_str *value);
+int
+detect_ctx_result_store_data(
+    struct detect_ctx_result *res, const struct detect_str *kind, struct detect_str *value);
 
 #endif /* DETECT_PARSER_H */

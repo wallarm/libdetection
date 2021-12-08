@@ -7,13 +7,13 @@ static bool detect_initialized = false;
 
 #define DETECT_TOKEN_STAT2KEY(stat) (&(stat)->token_name)
 WRB_GENERATE(
-    detect_token_stat_tree, detect_token_stat, struct detect_str *,
-    link, detect_str_cmp, DETECT_TOKEN_STAT2KEY);
+    detect_token_stat_tree, detect_token_stat, struct detect_str *, link, detect_str_cmp,
+    DETECT_TOKEN_STAT2KEY);
 
 #define DETECT_FLAG_STAT2KEY(stat) (&(stat)->flag_name)
 WRB_GENERATE(
-    detect_flag_stat_tree, detect_flag_stat, struct detect_str *,
-    link, detect_str_cmp, DETECT_FLAG_STAT2KEY);
+    detect_flag_stat_tree, detect_flag_stat, struct detect_str *, link, detect_str_cmp,
+    DETECT_FLAG_STAT2KEY);
 
 static int
 s_detect_deinit(void)
@@ -51,10 +51,7 @@ detect_deinit(void)
 struct detect *
 detect_open(const char *parser_name)
 {
-    struct detect_str name = {
-        .str = (char *)parser_name,
-        .len = strlen(parser_name)
-    };
+    struct detect_str name = {.str = (char *)parser_name, .len = strlen(parser_name)};
     struct detect_parser *parser;
 
     if ((parser = detect_parser_find(&name)) == NULL)
@@ -200,10 +197,10 @@ detect_ctx_result_deinit(struct detect_ctx_result *res)
     struct detect_data *data;
     struct detect_flag_stat *fs, *fs_tmp;
 
-    WRB_FOREACH_PDFS(fs, detect_flag_stat_tree, &res->stat_by_flags, fs_tmp) {
+    WRB_FOREACH_PDFS (fs, detect_flag_stat_tree, &res->stat_by_flags, fs_tmp) {
         struct detect_token_stat *ts, *ts_tmp;
 
-        WRB_FOREACH_PDFS(ts, detect_token_stat_tree, &fs->stat_by_tokens, ts_tmp)
+        WRB_FOREACH_PDFS (ts, detect_token_stat_tree, &fs->stat_by_tokens, ts_tmp)
             free(ts);
         free(fs);
     }
@@ -220,14 +217,12 @@ detect_ctx_result_deinit(struct detect_ctx_result *res)
 
 int
 detect_ctx_result_store_token(
-    struct detect_ctx_result *res, const struct detect_str *flag,
-    const struct detect_str *name)
+    struct detect_ctx_result *res, const struct detect_str *flag, const struct detect_str *name)
 {
     struct detect_flag_stat *fs;
     struct detect_token_stat *ts;
 
-    if ((fs = WRB_FIND(
-             detect_flag_stat_tree, &res->stat_by_flags, flag)) != NULL) {
+    if ((fs = WRB_FIND(detect_flag_stat_tree, &res->stat_by_flags, flag)) != NULL) {
         fs->count++;
     } else {
         fs = calloc(1, sizeof(*fs) + flag->len + 1);
@@ -240,8 +235,7 @@ detect_ctx_result_store_token(
         RB_INIT(&fs->stat_by_tokens);
         RB_INSERT(detect_flag_stat_tree, &res->stat_by_flags, fs);
     }
-    if ((ts = WRB_FIND(
-             detect_token_stat_tree, &fs->stat_by_tokens, name)) != NULL) {
+    if ((ts = WRB_FIND(detect_token_stat_tree, &fs->stat_by_tokens, name)) != NULL) {
         ts->count++;
     } else {
         ts = calloc(1, sizeof(*ts) + name->len + 1);
@@ -258,8 +252,7 @@ detect_ctx_result_store_token(
 
 int
 detect_ctx_result_store_data(
-    struct detect_ctx_result *res, const struct detect_str *kind,
-    struct detect_str *value)
+    struct detect_ctx_result *res, const struct detect_str *kind, struct detect_str *value)
 {
     struct detect_data *dd;
 
