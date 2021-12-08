@@ -1,0 +1,7 @@
+# $ git blame --ignore-revs-file=.git-blame-ignore-revs
+# Persistent config (works for IDEs):
+# $ git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Date:   Wed Dec 8 13:19:04 2021 +0300
+#    NODE-4411: Add .clang-format config and #reformat the code.
+a866caeb787577c32b215ec5cc8fff3b71ce7d54

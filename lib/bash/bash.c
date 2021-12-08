@@ -6,6 +6,7 @@ static const struct {
     struct detect_ctx_desc desc;
     enum bash_parser_tokentype start_tok;
 } bash_ctxs[] = {
+    // clang-format off
     [BASH_CTX_RCE] = {
         .desc = {.name = {CSTR_LEN("rce")}},
         .start_tok = TOK_START_RCE,
@@ -15,6 +16,7 @@ static const struct {
         .start_tok = TOK_START_WORD,
     },
 };
+// clang-format on
 
 static struct detect *
 detect_bash_open(struct detect_parser *parser)
@@ -106,8 +108,7 @@ detect_bash_push_token(struct bash_detect_ctx *ctx, int tok, void *tok_val)
          */
         if (ctx->detect->finish_cb != NULL)
             rv = ctx->detect->finish_cb(
-                ctx->detect, ctx->ctxnum,
-                ctx->detect->nctx - ctx->detect->nctx_finished,
+                ctx->detect, ctx->ctxnum, ctx->detect->nctx - ctx->detect->nctx_finished,
                 ctx->detect->finish_cb_arg);
         else
             rv = 0;
@@ -129,8 +130,7 @@ detect_bash_start(struct detect *detect)
         ctx->last_read_token = '\n';
         ctx->token_before_that = 0;
         bash_lexer_init(&ctx->lexer);
-        if (detect_bash_push_token(
-                ctx, bash_ctxs[ctx->type].start_tok, NULL) != 0)
+        if (detect_bash_push_token(ctx, bash_ctxs[ctx->type].start_tok, NULL) != 0)
             break;
     }
     return (0);
@@ -160,15 +160,13 @@ detect_bash_stop(struct detect *detect)
 }
 
 static int
-bash_lexer_add_data(
-    struct bash_detect_ctx *ctx, const void *data, size_t siz, bool fin)
+bash_lexer_add_data(struct bash_detect_ctx *ctx, const void *data, size_t siz, bool fin)
 {
     return (detect_re2c_add_data(&ctx->lexer.re2c, data, siz, fin));
 }
 
 static int
-detect_bash_add_data(
-    struct detect *detect, const void *data, size_t siz, bool fin)
+detect_bash_add_data(struct detect *detect, const void *data, size_t siz, bool fin)
 {
     unsigned i;
     union BASH_PARSER_STYPE token_arg;
@@ -196,14 +194,12 @@ detect_bash_add_data(
         } while (!ctx->res.finished && token != -EAGAIN);
     }
 
-  done:
+done:
     return (rv);
 }
 
 static int
-bash_store_key(
-    struct bash_detect_ctx *ctx,
-    struct bash_token_arg_data *info)
+bash_store_key(struct bash_detect_ctx *ctx, struct bash_token_arg_data *info)
 {
     const static struct {
         struct detect_str name;
@@ -216,17 +212,14 @@ bash_store_key(
     for (i = 0; i < sizeof(flagnames) / sizeof(flagnames[0]); i++) {
         if (!(info->flags & flagnames[i].flag))
             continue;
-        detect_ctx_result_store_token(
-            &ctx->res, &flagnames[i].name, &info->value);
+        detect_ctx_result_store_token(&ctx->res, &flagnames[i].name, &info->value);
     }
     bash_token_data_destructor(info);
     return (0);
 }
 
 int
-bash_store_data(
-    struct bash_detect_ctx *ctx,
-    struct bash_token_arg_data *info)
+bash_store_data(struct bash_detect_ctx *ctx, struct bash_token_arg_data *info)
 {
     switch (info->tok) {
     default:
