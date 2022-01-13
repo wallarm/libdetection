@@ -37,7 +37,7 @@ sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 %token TOK_START_RCE
 %token <data> TOK_DISTINCT TOK_VARIADIC
 %token <data> TOK_DATA TOK_NAME TOK_OPERATOR TOK_NUM
-%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+'
+%token <data> '.' ',' '(' ')' '*' '[' ']' ';' '=' ':' '{' '}' '-' '+' '~'
 %token <data> TOK_OR TOK_OR2 TOK_AND TOK_IS TOK_NOT TOK_DIV
               TOK_MOD TOK_XOR TOK_REGEXP
               TOK_BINARY TOK_SOUNDS TOK_OUTFILE TOK_MATCH TOK_AGAINST TOK_EXIST
@@ -94,7 +94,7 @@ context:  start_data
         | start_rce
         ;
 
-start_data: TOK_START_DATA data_cont
+start_data: TOK_START_DATA expr_cont
         | TOK_START_DATA noop_expr ','[u1] expr_cont {
             YYUSE($u1);
         }
@@ -102,7 +102,7 @@ start_data: TOK_START_DATA data_cont
 
 start_string: TOK_START_STRING {
             ctx->lexer.instring = true;
-        } data_cont
+        } expr_cont
         ;
 
 data:     TOK_DATA
@@ -142,16 +142,6 @@ data_name:  data
         |   TOK_OPEN
         |   TOK_LANGUAGE
         |   TOK_PERCENT
-        | '['[u1] TOK_NAME[name] ']'[u2] {
-            YYUSE($u1);
-            $$ = $name;
-            YYUSE($u2);
-        }
-        | '['[u1] TOK_TABLE[name] ']'[u2] {
-            YYUSE($u1);
-            $$ = $name;
-            YYUSE($u2);
-        }
         | '{'[u1] TOK_NAME[name] noop_expr '}'[u2] {
             YYUSE($u1);
             $$ = $name;
@@ -161,11 +151,6 @@ data_name:  data
         ;
 
 expr_cont:
-        | noop_expr after_exp_cont_op_noexpr after_exp_cont
-        | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
-        ;
-
-data_cont:
         | noop_expr after_exp_cont_op_noexpr after_exp_cont
         | noop_expr where_opt after_exp_cont_op_noexpr after_exp_cont
         ;
@@ -206,7 +191,7 @@ sql_parens: sql_no_parens
         | '('[u1] sql_parens ')'[u2] {YYUSE($u1); YYUSE($u2);}
         ;
 
-colref_exact:
+colref_exact2:
         data_name {
             sqli_token_data_destructor(&$data_name);
         }
@@ -234,7 +219,14 @@ colref_exact:
         }
         ;
 
-colref_asterisk:
+colref_exact: colref_exact2
+        | data_name[dname] ':'[u1] colref_exact2 {
+            sqli_token_data_destructor(&$dname);
+            YYUSE($u1);
+        }
+        ;
+
+colref_asterisk2:
         data_name '.'[u1] '*'[u2] {
             sqli_store_data(ctx, &$data_name);
             YYUSE($u1);
@@ -246,6 +238,13 @@ colref_asterisk:
             YYUSE($u1);
             YYUSE($u2);
             YYUSE($u3);
+        }
+        ;
+
+colref_asterisk: colref_asterisk2
+        | data_name[dname] ':'[u1] colref_asterisk2 {
+            sqli_token_data_destructor(&$dname);
+            YYUSE($u1);
         }
         ;
 
@@ -320,6 +319,9 @@ expr_common:
             sqli_token_data_destructor(&$operator);
         }
         | '+'[operator] noop_expr {
+            sqli_token_data_destructor(&$operator);
+        }
+        | '~'[operator] noop_expr {
             sqli_token_data_destructor(&$operator);
         }
         | noop_expr ':'[u1] '='[operator] noop_expr {
@@ -511,6 +513,7 @@ noop_expr: expr_common
         ;
 
 operator: TOK_OPERATOR
+        | '~'
         | '+'
         | '-'
         | '*'
@@ -623,12 +626,12 @@ alias_opt:
         | alias
         ;
 
-table_ref:
-          func alias_opt
-        | colref_exact alias_opt
-        | '('[u1] select ')'[u2] alias_opt {YYUSE($u1); YYUSE($u2);}
+table_ref2:
+          func
+        | colref_exact
+        | '('[u1] select ')'[u2] {YYUSE($u1); YYUSE($u2);}
         | joined_table
-        | '('[u1] joined_table ')'[u2] alias {YYUSE($u1); YYUSE($u2);}
+        | '('[u1] joined_table ')'[u2] {YYUSE($u1); YYUSE($u2);}
         ;
 
 join_type:
@@ -669,9 +672,12 @@ joined_table:
         }
         ;
 
-from_list: table_ref
-        | from_list ','[u1] table_ref {YYUSE($u1);}
+table_ref: table_ref2 alias_opt
         ;
+
+from_list: table_ref
+      | from_list ','[u1] table_ref {YYUSE($u1);}
+      ;
 
 from_opt:
         | TOK_FROM[key] from_list {
@@ -1107,6 +1113,20 @@ if_else:  TOK_IF[tk1] noop_expr sql_parens {
             sqli_store_data(ctx, &$tk1);
             sqli_store_data(ctx, &$tk2);
         }
+        | TOK_IF[tk1] noop_expr TOK_THEN[tk2] sql_parens semicolons_opt TOK_END[tk3] TOK_IF[tk4] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+        }
+        | TOK_IF[tk1] noop_expr TOK_THEN[tk2] sql_parens semicolons_opt
+          TOK_ELSE[tk3] sql_parens semicolons_opt TOK_END[tk4] TOK_IF[tk5] {
+            sqli_store_data(ctx, &$tk1);
+            sqli_store_data(ctx, &$tk2);
+            sqli_store_data(ctx, &$tk3);
+            sqli_store_data(ctx, &$tk4);
+            sqli_store_data(ctx, &$tk5);
+        }
         ;
 
 _while:  TOK_WHILE[tk1] noop_expr sql_parens {
@@ -1157,13 +1177,16 @@ after_exp_cont_op:
         expr[tk] after_exp_cont_op_noexpr {
             sqli_store_data(ctx, &$tk);
         }
-        | where_opt after_exp_cont_op_noexpr
+        | alias_opt from_opt where_opt after_exp_cont_op_noexpr
         ;
 
 after_exp_cont:
         close_multiple_parens_opt semicolons_opt multiple_sqls
         | close_multiple_parens after_exp_cont_op after_exp_cont
-        | close_multiple_parens ','[u1] select_list from_opt where_opt after_exp_cont {
+        | close_multiple_parens alias_opt ','[u1] select_list from_opt where_opt after_exp_cont {
+            YYUSE($u1);
+        }
+        | close_multiple_parens alias_opt ','[u1] from_list where_opt after_exp_cont {
             YYUSE($u1);
         }
         | after_exp_cont_op_noexpr close_multiple_parens after_exp_cont

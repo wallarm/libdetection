@@ -2,6 +2,7 @@
 #include "bash.h"
 #include "bash_lexer.h"
 #include "bash_test.h"
+#include <fnmatch.h>
 #include <string.h>
 #include <stdio.h>
 #include <wallarm/utils.h>
@@ -69,12 +70,12 @@ static const struct detect_str bash_lexer_cmds[] = {
     DETECT_CSTR("env"),
     DETECT_CSTR("env-update"),
     DETECT_CSTR("eval"),
+    DETECT_CSTR("exe"),
     DETECT_CSTR("exec"),
     DETECT_CSTR("exit"),
     DETECT_CSTR("expand"),
     DETECT_CSTR("export"),
     DETECT_CSTR("expr"),
-    DETECT_CSTR("false"),
     DETECT_CSTR("fc"),
     DETECT_CSTR("fetch"),
     DETECT_CSTR("fgrep"),
@@ -116,7 +117,6 @@ static const struct detect_str bash_lexer_cmds[] = {
     DETECT_CSTR("jobs"),
     DETECT_CSTR("kill"),
     DETECT_CSTR("killall"),
-    DETECT_CSTR("last"),
     DETECT_CSTR("lastcomm"),
     DETECT_CSTR("lastlog"),
     DETECT_CSTR("lastlogin"),
@@ -237,6 +237,7 @@ static const struct detect_str bash_lexer_cmds[] = {
     DETECT_CSTR("setenv"),
     DETECT_CSTR("setsid"),
     DETECT_CSTR("sftp"),
+    DETECT_CSTR("sg"),
     DETECT_CSTR("sh"),
     DETECT_CSTR("sh.distrib"),
     DETECT_CSTR("shutdown"),
@@ -491,9 +492,89 @@ bash_get_token(
           YYSETSTATE(-1);
           goto return_word;
       }
-      <WORD> [$][_a-zA-Z][_a-zA-Z0-9]*|[$][0-9]|"${"word+"}" {
+      <INITIAL, WORD> [$][0-9\-\*@!] {
+          if (!ctx->lexer.buf.data.str)
+              detect_buf_init(&ctx->lexer.buf, 32, 1024);
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto bash_WORD;
+      }
+      <INITIAL, WORD> [$][_a-zA-Z] => VAR {
+          if (!ctx->lexer.buf.data.str)
+              detect_buf_init(&ctx->lexer.buf, 32, 1024);
+
+          detect_buf_init(&ctx->lexer.var_name, 32, 1024);
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <INITIAL, WORD> "${"word => VAR2 {
+          if (!ctx->lexer.buf.data.str)
+              detect_buf_init(&ctx->lexer.buf, 32, 1024);
+
+          detect_buf_init(&ctx->lexer.var_name, 32, 1024);
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR2;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <VAR> [_a-zA-Z0-9] {
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
+      }
+      <VAR> [^] => WORD {
+          DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
+
+var:
+          {
+              struct var *var;
+              if ((var = WRB_FIND(vars_tree, &ctx->lexer.vars, &ctx->lexer.var_name)) != NULL) {
+                  for(int i = 0; i < var->val.len; ++i) {
+                      if (memchr(" \t", var->val.str[i], 2)) {
+                          detect_buf_deinit(&ctx->lexer.var_name);
+                          YYSETCONDITION(bash_INITIAL);
+                          YYSETSTATE(-1);
+                          goto return_word;
+                      }
+                      if (detect_buf_add_char(&ctx->lexer.buf, var->val.str[i])) {
+                          detect_buf_deinit(&ctx->lexer.var_name);
+                          detect_buf_deinit(&ctx->lexer.buf);
+                          RET(ctx, TOK_ERROR);
+                      }
+                  }
+              }
+
+              detect_buf_deinit(&ctx->lexer.var_name);
+              goto bash_WORD;
+          }
+      }
+      <VAR2> "}" => WORD {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto var;
+      }
+      <VAR2> word {
+          if (!detect_buf_add_char(&ctx->lexer.var_name, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1])) {
+              DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+              goto bash_VAR2;
+          } else {
+              detect_buf_deinit(&ctx->lexer.var_name);
+              detect_buf_deinit(&ctx->lexer.buf);
+              RET(ctx, TOK_ERROR);
+          }
       }
       <WORD> word {
           if (DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1] == '\'') {
@@ -575,6 +656,14 @@ bash_get_token(
 
           goto return_word;
       }
+      <WORD> "$()" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_WORD;
+      }
+      <WORD> "``" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_WORD;
+      }
       <WORD> "$(" => INITIAL {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
@@ -593,23 +682,100 @@ bash_get_token(
 
 return_word:
           {
-              if (memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len)) {
+              char *pch = memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len);
+              if (pch) {
+                  struct var *var = calloc(1, sizeof(*var) + ctx->lexer.buf.data.len - 1 /* '=' */ + 2 /* '\0' */);
+
+                  var->name.str = (void *)(var + 1);
+                  memcpy(var->name.str, ctx->lexer.buf.data.str, pch - ctx->lexer.buf.data.str);
+                  var->name.len = pch - ctx->lexer.buf.data.str;
+                  var->name.str[var->name.len] = 0;
+
+                  var->val.str = (void *)((char *)(var + 1) + (pch - ctx->lexer.buf.data.str + 1));
+                  memcpy(var->val.str, pch + 1, ctx->lexer.buf.data.str + ctx->lexer.buf.data.len - pch - 1);
+                  var->val.len = ctx->lexer.buf.data.str + ctx->lexer.buf.data.len - pch - 1;
+                  var->val.str[var->val.len] = 0;
+
+                  RB_INSERT(vars_tree, &ctx->lexer.vars, var);
+
                   detect_buf_deinit(&ctx->lexer.buf);
                   KEYNAME_SET_RET_WO_CHECK(ctx, arg, ASSIGNMENT_WORD, 0);
               }
 
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str) {
-                  char *pch = memrchr(ctx->lexer.buf.data.str, '/', ctx->lexer.buf.data.len);
-                  if (!pch)
-                      pch = ctx->lexer.buf.data.str;
-                  else
-                      ++pch;
-                  int len = ctx->lexer.buf.data.len - (pch - ctx->lexer.buf.data.str);
-                  ssize_t idx = bash_lexer_cmd_find(pch, len);
-
-                  if (idx >= 0) {
+                  if (detect_buf_add_char(&ctx->lexer.buf, '\0')) {
                       detect_buf_deinit(&ctx->lexer.buf);
-                      KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                      RET(ctx, TOK_ERROR);
+                  }
+                  ctx->lexer.buf.data.len--;
+
+                  while (true) {
+                      size_t s_len = ctx->lexer.buf.data.len;
+                      char *s_end = ctx->lexer.buf.data.str + s_len;
+                      char *start = memchr(ctx->lexer.buf.data.str, '{', s_len);
+                      if (!start)
+                          break;
+
+                      char *end = memrchr(start, '}', s_len);
+                      if (!end)
+                          break;
+
+                      char *pch = memchr(start, ',', end - start);
+                      if (!pch)
+                          break;
+
+                      memcpy(start, start + 1, pch - (start + 1));
+                      memcpy(pch - 1, end + 1, s_end - (end + 1) + 1);
+                      ctx->lexer.buf.data.len =
+                          pch - 1 + (s_end - (end + 1)) - ctx->lexer.buf.data.str;
+                  }
+
+                  char *pch = memrchr(ctx->lexer.buf.data.str, '/', ctx->lexer.buf.data.len);
+                  bool was_root = false;
+                  if (!pch) {
+                      pch = ctx->lexer.buf.data.str;
+                      was_root = true;
+                  } else {
+                      size_t len = pch - ctx->lexer.buf.data.str;
+                      char *prev = pch;
+                      char *cur = memrchr(ctx->lexer.buf.data.str, '/', len);
+                      while (cur) {
+                          *prev = '\0';
+                          if ((prev - cur - 1) == 3 && !strncmp(cur + 1, "bin", 3) ||
+                              (prev - cur - 1) == 3 && !strncmp(cur + 1, "sbin", 3) ||
+                              (prev - cur - 1) == 3 && !strncmp(cur + 1, "proc", 3) ||
+                              !fnmatch(cur + 1, "bin", 0) ||
+                              !fnmatch(cur + 1, "sbin", 0) ||
+                              !fnmatch(cur + 1, "proc", 0)) {
+                              *prev = '/';
+                              was_root = true;
+                              break;
+                          }
+                          *prev = '/';
+                          len = cur - ctx->lexer.buf.data.str;
+                          prev = cur;
+                          cur = memrchr(ctx->lexer.buf.data.str, '/', len);
+                      }
+                      ++pch;
+                  }
+
+                  if (was_root) {
+                      int len = ctx->lexer.buf.data.len - (pch - ctx->lexer.buf.data.str);
+                      ssize_t idx = bash_lexer_cmd_find(pch, len);
+
+                      if (idx >= 0) {
+                          detect_buf_deinit(&ctx->lexer.buf);
+                          KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                      }
+
+                      if (*ctx->lexer.buf.data.str == '/') {
+                          for (size_t i = 1; i < W_ARRAY_SIZE(bash_lexer_cmds); ++i) {
+                            if (!fnmatch(pch, bash_lexer_cmds[i].str, 0)) {
+                                detect_buf_deinit(&ctx->lexer.buf);
+                                KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
+                            }
+                          }
+                      }
                   }
               }
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str &&
@@ -732,6 +898,10 @@ return_word:
       <INITIAL> '|&' {
           RET_DATA(BAR_AND, ctx, arg);
       }
+      <INITIAL> "$()" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_INITIAL;
+      }
       <INITIAL> '$(' {
           RET_DATA(SUBSH_START, ctx, arg);
       }
@@ -843,6 +1013,10 @@ return_word:
           detect_buf_deinit(&ctx->lexer.buf);
           RET(ctx, TOK_ERROR);
       }
+      <INITIAL> "``" {
+          DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
+          goto bash_INITIAL;
+      }
       <INITIAL> self {
           arg->data.value.str = (char *)&selfsyms[DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]];
           arg->data.value.len = 1;
@@ -856,13 +1030,6 @@ return_word:
       <INITIAL> "{"[_a-zA-Z][_a-zA-Z0-9]*"}"/[<>] {
           YYSETSTATE(-1);
           KEYNAME_SET_RET_WO_CHECK(ctx, arg, REDIR_WORD, 0);
-      }
-      <INITIAL> [$][_a-zA-Z][_a-zA-Z0-9]*|[$][0-9]|"${"word+"}" {
-          YYSETSTATE(-1);
-          if (ctx->last_read_token != TOK_WORD)
-              KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, BASH_KEY_INSTR);
-          else
-              KEYNAME_SET_RET_WO_CHECK(ctx, arg, WORD, 0);
       }
       <INITIAL> word {
           detect_buf_init(&ctx->lexer.buf, 32, 1024);
