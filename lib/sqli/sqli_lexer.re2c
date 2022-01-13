@@ -12,9 +12,9 @@
 
 static const unsigned char selfsyms[] = {
     SSYM('.'), SSYM(','), SSYM('('), SSYM(')'),
-    SSYM('*'), SSYM('['), SSYM(']'),
+    SSYM('*'),
     SSYM(';'), SSYM('='), SSYM(':'), SSYM('{'),
-    SSYM('}'), SSYM('-'), SSYM('+'),
+    SSYM('}'), SSYM('-'), SSYM('+'), SSYM('~'),
 };
 
 int
@@ -97,9 +97,9 @@ sqli_get_token(
       re2c:condenumprefix  = sqli_;
 
       whitespace = [ \x01-\x1F\x7F\x80\x81\x88\x8D\x8F\x90\x98\x9D\xA0]|[\xC2][\xA0];
-      self = [,\.()\[\];=:{}];
-      opchar = [~!^&|%+\-*/<>];
-      opchar_nocomment = [~!^&|%+<>=];
+      self = [,\.();=:{}~];
+      opchar = [!^&|%+\-*/<>];
+      opchar_nocomment = [!^&|%+<>=];
       key_end = [^a-zA-Z0-9_];
 
       <> {
@@ -119,6 +119,10 @@ sqli_get_token(
       <INSTRING> ['"`] => INITIAL {
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
+      }
+      <INSTRING> ']' => INITIAL {
+          YYSETSTATE(-1);
+          RET_DATA(NAME, ctx, arg);
       }
       <SQUOTE> "''" {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
@@ -147,7 +151,11 @@ sqli_get_token(
           YYSETSTATE(-1);
           RET_DATA(DATA, ctx, arg);
       }
-      <INSTRING,SQUOTE,DQUOTE,BQUOTE> [\x00] {
+      <IQUOTE> [\]] => INITIAL {
+          YYSETSTATE(-1);
+          RET_DATA(NAME, ctx, arg);
+      }
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE,IQUOTE> [\x00] {
           if (ctx->lexer.re2c.fin && ctx->lexer.re2c.tmp_data_in_use &&
               ctx->lexer.re2c.pos >= ctx->lexer.re2c.tmp_data + ctx->lexer.re2c.tmp_data_siz) {
               YYSETCONDITION(sqli_INITIAL);
@@ -160,12 +168,12 @@ sqli_get_token(
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
       }
-      <INSTRING,SQUOTE,DQUOTE,BQUOTE> .|[\n] {
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE,IQUOTE> .|[\n] {
           detect_buf_add_char(&ctx->lexer.buf, DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)[-1]);
           DETECT_RE2C_UNUSED_BEFORE(&ctx->lexer.re2c);
           goto yy0;
       }
-      <INSTRING,SQUOTE,DQUOTE,BQUOTE> [^] {
+      <INSTRING,SQUOTE,DQUOTE,BQUOTE,IQUOTE> [^] {
           DETECT_RE2C_YYCURSOR(&ctx->lexer.re2c)--;
           YYSETSTATE(-1);
           RET_DATA_ERROR(ctx);
@@ -859,6 +867,10 @@ sqli_get_token(
       <INITIAL> [`] => BQUOTE {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
           goto sqli_BQUOTE;
+      }
+      <INITIAL> [\[] => IQUOTE {
+          detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, MAXBUFSIZ);
+          goto sqli_IQUOTE;
       }
       <INITIAL> [\.][0-9] => DECIMAL {
           detect_buf_init(&ctx->lexer.buf, MINBUFSIZ, 256);

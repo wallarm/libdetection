@@ -216,6 +216,9 @@ pt_get_token(
       <INITIAL> "var"/dir_sep_end {
           return (pt_root(ctx, arg, CSTR("var")));
       }
+      <INITIAL> "boot.ini"/dir_sep_end {
+          return (pt_root(ctx, arg, CSTR("boot.ini")));
+      }
       <INITIAL> [\x00] { return (0); }
       <INITIAL> [^] => NAME {
           detect_buf_init(&ctx->lexer.buf, 32, 1024);

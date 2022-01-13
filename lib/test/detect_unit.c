@@ -17,6 +17,9 @@
 #define s_bash_attacks(...)     s_type_checks_("bash", true, __VA_ARGS__)
 #define s_bash_not_attacks(...) s_type_checks_("bash", false, __VA_ARGS__)
 
+#define s_pt_attacks(...)       s_type_checks_("pt", true, __VA_ARGS__)
+#define s_pt_not_attacks(...)   s_type_checks_("pt", false, __VA_ARGS__)
+
 static void
 s_type_checks(const char *typename, const struct detect_str *tests, size_t ntests, bool has_attack)
 {
@@ -119,6 +122,7 @@ Tsqli_operators(void)
                   "'server')::html")},
         {CSTR_LEN("1 AND U&'pgsql evade' uescape '!'")},
         {CSTR_LEN("1 NOT BETWEEN 0 AND 1")},
+        {CSTR_LEN("1 AND ~1")},
     );
     // clang-format on
 }
@@ -151,6 +155,7 @@ static void
 Tsqli_identifier_quote(void)
 {
     s_sqli_attacks({CSTR_LEN("SELECT * FROM `select`")});
+    s_sqli_attacks({CSTR_LEN("SELECT * FROM [select\nfrom]")});
 }
 
 static void
@@ -458,7 +463,8 @@ Tsqli_if_else(void)
         {CSTR_LEN("1'; IF (1=1) UPDATE table_name "
                   "SET column1 = value1 ELSE UPDATE "
                   "table_name SET column1 = value1")},
-        {CSTR_LEN("SELECT IF(1=1,1, 0)")}, );
+        {CSTR_LEN("SELECT IF(1=1,1, 0)")},
+        {CSTR_LEN("IF (1=1) THEN func(5); ELSE func(0); END IF;")}, );
 }
 
 static void
@@ -531,6 +537,23 @@ Tsqli_regress_zero_realloc(void)
 }
 
 static void
+Tsqli_broken_from_select_list(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("1) AS t WHERE 1=1")}, {CSTR_LEN("1) AS t1, table AS t2 WHERE 1=1")},
+        {CSTR_LEN("1) AS n FROM db.table WHERE 1=1")},
+        {CSTR_LEN("1) AS n1, name AS n2 FROM db.table WHERE 1=1")}, );
+}
+
+static void
+Tsqli_table_name(void)
+{
+    s_sqli_attacks(
+        {CSTR_LEN("SELECT 1 FROM db:table")}, {CSTR_LEN("SELECT 1 FROM db:owner.object")},
+        {CSTR_LEN("SELECT 1 FROM db:owner.object.object")}, );
+}
+
+static void
 Tbash_constraints(void)
 {
     CU_ASSERT_EQUAL(bash_lexer_test(), 0);
@@ -549,6 +572,10 @@ Tbash_simplest(void)
         {CSTR_LEN("VAR=VAL l$1s")},
         {CSTR_LEN("VAR=VAL l$name's'")},
         {CSTR_LEN("VAR=VAL l${name}s")},
+        {CSTR_LEN("$-id")},
+        {CSTR_LEN("$*id")},
+        {CSTR_LEN("(aa=d;i$aa)")},
+        {CSTR_LEN("cat$IFS/etc/os-release")},
     );
     // clang-format on
 }
@@ -597,6 +624,8 @@ Tbash_commands(void)
         {CSTR_LEN("if [ 1 -eq 2 ];  then echo equal ; else echo 'not equal' ; fi")},
         {CSTR_LEN("(ls -a)")},
         {CSTR_LEN("{ ls -a; }")},
+        {CSTR_LEN("/proc/self/exe -c id")},
+        {CSTR_LEN("sg root -c id")},
     );
     // clang-format on
 }
@@ -677,7 +706,43 @@ Tbash_substitute(void)
     s_bash_attacks(
         {CSTR_LEN("e$(FOO='BAR BAR BAR' echo ch)o test")},
         {CSTR_LEN("foo <(FOO='BAR BAR BAR' ls)")},
-        {CSTR_LEN("foo >(FOO='BAR BAR BAR' last)")},
+        {CSTR_LEN("c$()at /e??/p?????")},
+        {CSTR_LEN(";``id")},
+    );
+}
+
+static void
+Tbash_globbing(void)
+{
+    s_bash_attacks(
+        {CSTR_LEN("/???/??t /???/??ss??")},
+        {CSTR_LEN("{cat,/etc/os-release}")},
+    );
+}
+
+static void
+Tpt_boot_ini(void)
+{
+    s_pt_attacks(
+        {CSTR_LEN("../dir/../boot.ini")},
+    );
+}
+
+static void
+Tpt_inj_start_with_sep(void)
+{
+    s_pt_attacks(
+        {CSTR_LEN("///../../etc///passwd")},
+        {CSTR_LEN("///..\\..\\etc///passwd")},
+        {CSTR_LEN("\\../\\../etc/\\passwd")},
+    );
+}
+
+static void
+Tpt_travs_names_root(void)
+{
+    s_pt_attacks(
+        {CSTR_LEN("../\\windows/\\system32/\\drivers/\\etc/\\hosts")},
     );
     // clang-format on
 }
@@ -690,62 +755,64 @@ main(void)
         CU_TEST_INFO_NULL
     };
     CU_TestInfo sqli_tests[] = {
-        {"simplest",              Tsqli_simplest             },
-        {"rce",                   Tsqli_rce                  },
-        {"inj_in_table_name",     Tsqli_inj_in_table_name    },
-        {"union",                 Tsqli_union                },
-        {"operators",             Tsqli_operators            },
-        {"begin_end",             Tsqli_begin_end            },
-        {"waitfor",               Tsqli_waitfor              },
-        {"top",                   Tsqli_top                  },
-        {"identifier_quote",      Tsqli_identifier_quote     },
-        {"whitespace",            Tsqli_whitespace           },
-        {"null",                  Tsqli_null                 },
-        {"left_func",             Tsqli_left_func            },
-        {"func",                  Tsqli_func                 },
-        {"var_start_with_dollar", Tsqli_var_start_with_dollar},
-        {"create_func",           Tsqli_create_func          },
-        {"bit_num",               Tsqli_bit_num              },
-        {"join_wo_join_qual",     Tsqli_join_wo_join_qual    },
-        {"empty_schema",          Tsqli_empty_schema         },
-        {"asc_desc",              Tsqli_asc_desc             },
-        {"shutdown",              Tsqli_shutdown             },
-        {"into_outfile",          Tsqli_into_outfile         },
-        {"declare",               Tsqli_declare              },
-        {"execute",               Tsqli_execute              },
-        {"nul_in_str",            Tsqli_nul_in_str           },
-        {"select",                Tsqli_select               },
-        {"drop",                  Tsqli_drop                 },
-        {"where",                 Tsqli_where                },
-        {"string",                Tsqli_string               },
-        {"use",                   Tsqli_use                  },
-        {"delete",                Tsqli_delete               },
-        {"0x",                    Tsqli_0x                   },
-        {"print",                 Tsqli_print                },
-        {"load",                  Tsqli_load                 },
-        {"procedure_analyse",     Tsqli_procedure_analyse    },
-        {"set",                   Tsqli_set                  },
-        {"goto",                  Tsqli_goto                 },
-        {"call",                  Tsqli_call                 },
-        {"for_xml",               Tsqli_for_xml              },
-        {"insert",                Tsqli_insert               },
-        {"var",                   Tsqli_var                  },
-        {"open",                  Tsqli_open                 },
-        {"inner_select",          Tsqli_inner_select         },
-        {"alter_database",        Tsqli_alter_database       },
-        {"backslash",             Tsqli_backslash            },
-        {"nl_in_str",             Tsqli_nl_in_str            },
-        {"buf",                   Tsqli_buf                  },
-        {"if_else",               Tsqli_if_else              },
-        {"while",                 Tsqli_while                },
-        {"semicolons_opt",        Tsqli_semicolons_opt       },
-        {"expr",                  Tsqli_expr                 },
-        {"var_start_with_num",    Tsqli_var_start_with_num   },
-        {"dot_e_dot",             Tsqli_dot_e_dot            },
-        {"label",                 Tsqli_label                },
-        {"data_name",             Tsqli_data_name            },
-        {"regress_zero_realloc",  Tsqli_regress_zero_realloc },
-        {"comment",               Tsqli_comment              },
+        {"simplest",              Tsqli_simplest               },
+        {"rce",                   Tsqli_rce                    },
+        {"inj_in_table_name",     Tsqli_inj_in_table_name      },
+        {"union",                 Tsqli_union                  },
+        {"operators",             Tsqli_operators              },
+        {"begin_end",             Tsqli_begin_end              },
+        {"waitfor",               Tsqli_waitfor                },
+        {"top",                   Tsqli_top                    },
+        {"identifier_quote",      Tsqli_identifier_quote       },
+        {"whitespace",            Tsqli_whitespace             },
+        {"null",                  Tsqli_null                   },
+        {"left_func",             Tsqli_left_func              },
+        {"func",                  Tsqli_func                   },
+        {"var_start_with_dollar", Tsqli_var_start_with_dollar  },
+        {"create_func",           Tsqli_create_func            },
+        {"bit_num",               Tsqli_bit_num                },
+        {"join_wo_join_qual",     Tsqli_join_wo_join_qual      },
+        {"empty_schema",          Tsqli_empty_schema           },
+        {"asc_desc",              Tsqli_asc_desc               },
+        {"shutdown",              Tsqli_shutdown               },
+        {"into_outfile",          Tsqli_into_outfile           },
+        {"declare",               Tsqli_declare                },
+        {"execute",               Tsqli_execute                },
+        {"nul_in_str",            Tsqli_nul_in_str             },
+        {"select",                Tsqli_select                 },
+        {"drop",                  Tsqli_drop                   },
+        {"where",                 Tsqli_where                  },
+        {"string",                Tsqli_string                 },
+        {"use",                   Tsqli_use                    },
+        {"delete",                Tsqli_delete                 },
+        {"0x",                    Tsqli_0x                     },
+        {"print",                 Tsqli_print                  },
+        {"load",                  Tsqli_load                   },
+        {"procedure_analyse",     Tsqli_procedure_analyse      },
+        {"set",                   Tsqli_set                    },
+        {"goto",                  Tsqli_goto                   },
+        {"call",                  Tsqli_call                   },
+        {"for_xml",               Tsqli_for_xml                },
+        {"insert",                Tsqli_insert                 },
+        {"var",                   Tsqli_var                    },
+        {"open",                  Tsqli_open                   },
+        {"inner_select",          Tsqli_inner_select           },
+        {"alter_database",        Tsqli_alter_database         },
+        {"backslash",             Tsqli_backslash              },
+        {"nl_in_str",             Tsqli_nl_in_str              },
+        {"buf",                   Tsqli_buf                    },
+        {"if_else",               Tsqli_if_else                },
+        {"while",                 Tsqli_while                  },
+        {"semicolons_opt",        Tsqli_semicolons_opt         },
+        {"expr",                  Tsqli_expr                   },
+        {"var_start_with_num",    Tsqli_var_start_with_num     },
+        {"dot_e_dot",             Tsqli_dot_e_dot              },
+        {"label",                 Tsqli_label                  },
+        {"data_name",             Tsqli_data_name              },
+        {"regress_zero_realloc",  Tsqli_regress_zero_realloc   },
+        {"comment",               Tsqli_comment                },
+        {"select_list",           Tsqli_broken_from_select_list},
+        {"table_name",            Tsqli_table_name             },
         CU_TEST_INFO_NULL
     };
     CU_TestInfo bash_tests[] = {
@@ -757,6 +824,13 @@ main(void)
         {"redirection", Tbash_redirection},
         {"inj",         Tbash_inj        },
         {"substitute",  Tbash_substitute },
+        {"globbing",    Tbash_globbing   },
+        CU_TEST_INFO_NULL
+    };
+    CU_TestInfo pt_tests[] = {
+        {"boot_ini",           Tpt_boot_ini          },
+        {"inj_start_with_sep", Tpt_inj_start_with_sep},
+        {"travs_names_root",   Tpt_travs_names_root  },
         CU_TEST_INFO_NULL
     };
     // clang-format off
@@ -765,6 +839,8 @@ main(void)
         {.pName = "sqli", .pTests = sqli_tests,
          .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
         {.pName = "bash", .pTests = bash_tests,
+         .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
+        {.pName = "pt", .pTests = pt_tests,
          .pInitFunc = s_sqli_suite_init, .pCleanupFunc = s_sqli_suite_deinit},
         CU_SUITE_INFO_NULL,
     };

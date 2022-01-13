@@ -32,6 +32,7 @@ pt_parser_error(struct pt_detect_ctx *ctx, const char *s)
 context: start_pt
         ;
 start_pt: TOK_START_PT_INJ inj
+        | TOK_START_PT_INJ seps inj
         ;
 
 ssep: TOK_SEP[k] {
@@ -54,15 +55,21 @@ sname: TOK_NAME[n] {
 seps:     ssep
         | seps ssep
         ;
-travs:    strav
-        | travs seps strav
-        ;
 inj_pref:
         | inj_pref sroot seps
         | inj_pref sname seps
-        | inj_pref travs seps sname seps
         ;
-inj:    inj_pref travs seps sroot {
+inj_pref2: inj_pref strav seps
+        | inj_pref3 strav seps
+        | inj_pref2 strav seps
+        ;
+inj_pref3: inj_pref2 sname seps
+        | inj_pref3 sname seps
+        ;
+inj:      inj_pref2 sroot {
+            YYACCEPT;
+        }
+        | inj_pref3 sroot {
             YYACCEPT;
         }
         ;
