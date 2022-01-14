@@ -4,6 +4,7 @@
 #include "detect.h"
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 struct detect_buf {
     struct detect_str data;
@@ -22,8 +23,7 @@ detect_buf_reinit(struct detect_buf *buf)
 }
 
 static inline int
-detect_buf_init(
-    struct detect_buf *buf, size_t minsiz, ssize_t maxsiz)
+detect_buf_init(struct detect_buf *buf, size_t minsiz, ssize_t maxsiz)
 {
     if (!minsiz)
         minsiz = 32;

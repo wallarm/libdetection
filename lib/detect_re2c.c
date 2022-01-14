@@ -5,11 +5,9 @@
 #include <errno.h>
 
 int
-detect_re2c_add_data(
-    struct detect_re2c *ctx, const void *data, size_t siz, bool fin)
+detect_re2c_add_data(struct detect_re2c *ctx, const void *data, size_t siz, bool fin)
 {
-    assert(ctx->data == NULL ||
-           ctx->pos == ctx->data + ctx->siz);
+    assert(ctx->data == NULL || ctx->pos == ctx->data + ctx->siz);
 
     if (!ctx->tmp_data_in_use) {
         ctx->pos = data;
@@ -26,15 +24,14 @@ detect_re2c_add_data(
 }
 
 static bool
-detect_re2c_chk_switch_to_data(
-    struct detect_re2c *ctx, const unsigned char **end)
+detect_re2c_chk_switch_to_data(struct detect_re2c *ctx, const unsigned char **end)
 {
     size_t data_since_start;
     const unsigned char *tmp_data_end = *end;
     const unsigned char *data_copied_ptr;
 
     data_since_start = tmp_data_end - ctx->start;
-    if (ctx->data_copied < data_since_start)
+    if (!ctx->data || (ctx->data_copied < data_since_start))
         return (false);
 
     data_copied_ptr = ctx->data + ctx->data_copied;
@@ -50,8 +47,7 @@ detect_re2c_chk_switch_to_data(
 }
 
 int
-detect_re2c_prepare_input(
-    struct detect_re2c *ctx, const unsigned char **end, unsigned maxfill)
+detect_re2c_prepare_input(struct detect_re2c *ctx, const unsigned char **end, unsigned maxfill)
 {
     if (!ctx->tmp_data_in_use) {
         *end = ctx->data + ctx->siz;
@@ -61,7 +57,7 @@ detect_re2c_prepare_input(
     *end = ctx->tmp_data + ctx->tmp_data_siz;
     detect_re2c_chk_switch_to_data(ctx, end);
 
-  fill:
+fill:
     if (!ctx->yyfill_need && *end == ctx->pos && ctx->fin) {
         /*
          * A special case: we have to finalize the data
@@ -77,8 +73,7 @@ detect_re2c_prepare_input(
 
 static int
 detect_re2c_switch_to_tmp_data(
-    struct detect_re2c *ctx, const unsigned char **end,
-    unsigned need, unsigned maxfill)
+    struct detect_re2c *ctx, const unsigned char **end, unsigned need, unsigned maxfill)
 {
     unsigned start_pos_offset = ctx->pos - ctx->start;
     unsigned start_marker_offset = ctx->marker - ctx->start;
@@ -94,8 +89,8 @@ detect_re2c_switch_to_tmp_data(
             unsigned new_alloc;
             unsigned char *new_tmp_data;
 
-            for (new_alloc = ctx->tmp_data_alloc * 2;
-                 siz > new_alloc; new_alloc *= 2);
+            for (new_alloc = ctx->tmp_data_alloc * 2; siz > new_alloc; new_alloc *= 2)
+                ;
             if ((new_tmp_data = realloc(ctx->tmp_data, new_alloc)) == NULL)
                 return (errno);
             ctx->tmp_data = new_tmp_data;
@@ -119,8 +114,7 @@ detect_re2c_switch_to_tmp_data(
 
 static int
 detect_re2c_update_tmp_data(
-    struct detect_re2c *ctx, const unsigned char **end,
-    unsigned need, unsigned maxfill)
+    struct detect_re2c *ctx, const unsigned char **end, unsigned need, unsigned maxfill)
 {
     unsigned tmp_data_size, siz;
     unsigned shift;
@@ -147,8 +141,8 @@ detect_re2c_update_tmp_data(
         unsigned new_alloc;
         unsigned char *new_tmp_data;
 
-        for (new_alloc = ctx->tmp_data_alloc * 2;
-             siz > new_alloc; new_alloc *= 2);
+        for (new_alloc = ctx->tmp_data_alloc * 2; siz > new_alloc; new_alloc *= 2)
+            ;
         if ((new_tmp_data = realloc(ctx->tmp_data, new_alloc)) == NULL)
             return (errno);
         ctx->start = new_tmp_data;
@@ -194,8 +188,7 @@ detect_re2c_update_tmp_data(
 
 int
 detect_re2c_yyfill(
-    struct detect_re2c *ctx, const unsigned char **end,
-    unsigned need, unsigned maxfill)
+    struct detect_re2c *ctx, const unsigned char **end, unsigned need, unsigned maxfill)
 {
     int rv;
 

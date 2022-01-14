@@ -12,8 +12,8 @@ enum PT_CTX {
 
 struct pt_token_arg_data {
     struct detect_str value;
-#define PT_KEY_INSTR      (1<<0)
-#define PT_VALUE_NEEDFREE (1<<1)
+#define PT_KEY_INSTR      (1 << 0)
+#define PT_VALUE_NEEDFREE (1 << 1)
     uint32_t flags;
     int tok;
 };
@@ -40,10 +40,11 @@ struct pt_detect_ctx {
     struct detect_ctx_result res;
 };
 
-DETECT_HIDDEN int pt_get_token(
-    struct pt_detect_ctx *ctx, union PT_PARSER_STYPE *arg);
-DETECT_HIDDEN void pt_token_data_destructor(void *token);
-DETECT_HIDDEN int pt_store_data(
-    struct pt_detect_ctx *ctx, struct pt_token_arg_data *info);
+DETECT_HIDDEN int
+pt_get_token(struct pt_detect_ctx *ctx, union PT_PARSER_STYPE *arg);
+DETECT_HIDDEN void
+pt_token_data_destructor(void *token);
+DETECT_HIDDEN int
+pt_store_data(struct pt_detect_ctx *ctx, struct pt_token_arg_data *info);
 
 #endif /* PATHTRAVERSAL_H */

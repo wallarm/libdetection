@@ -14,10 +14,10 @@ enum BASH_CTX {
 
 struct bash_token_arg_data {
     struct detect_str value;
-#define BASH_KEY_INSTR      (1<<0)
-#define BASH_VALUE_NEEDFREE (1<<1)
-#define BASH_DATA_NOSTART   (1<<2)
-#define BASH_DATA_NOEND     (1<<3)
+#define BASH_KEY_INSTR      (1 << 0)
+#define BASH_VALUE_NEEDFREE (1 << 1)
+#define BASH_DATA_NOSTART   (1 << 2)
+#define BASH_DATA_NOEND     (1 << 3)
     uint32_t flags;
     int tok;
 };
@@ -33,7 +33,7 @@ RB_HEAD(vars_tree, var);
 WRB_PROTOTYPE(vars_tree, var, struct detect_str *);
 
 struct bash_detect_lexer_ctx {
-    unsigned inword:1;
+    unsigned inword : 1;
 
     struct detect_re2c re2c;
     int state;
@@ -57,10 +57,11 @@ struct bash_detect_ctx {
     int token_before_that;
 };
 
-DETECT_HIDDEN int bash_get_token(
-    struct bash_detect_ctx *ctx, union BASH_PARSER_STYPE *arg);
-DETECT_HIDDEN void bash_token_data_destructor(void *token);
-DETECT_HIDDEN int bash_store_data(
-    struct bash_detect_ctx *ctx, struct bash_token_arg_data *info);
+DETECT_HIDDEN int
+bash_get_token(struct bash_detect_ctx *ctx, union BASH_PARSER_STYPE *arg);
+DETECT_HIDDEN void
+bash_token_data_destructor(void *token);
+DETECT_HIDDEN int
+bash_store_data(struct bash_detect_ctx *ctx, struct bash_token_arg_data *info);
 
 #endif /* BASH_H */

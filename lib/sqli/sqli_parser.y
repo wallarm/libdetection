@@ -1,6 +1,10 @@
 %{
 #include "sqli.h"
 
+#if !defined(YYUSE)
+#define YYUSE(arg) YY_USE(arg)
+#endif
+
 static void
 sqli_parser_error(struct sqli_detect_ctx *ctx, const char *s)
 {
@@ -119,7 +123,10 @@ data:     TOK_DATA
                 memcpy($$.value.str, $1.value.str, $1.value.len);
                 $$.flags = SQLI_VALUE_NEEDFREE;
             }
-            memcpy($$.value.str + $1.value.len, $2.value.str, $2.value.len);
+
+            if ($$.value.str && $2.value.str) {
+                memcpy($$.value.str + $1.value.len, $2.value.str, $2.value.len);
+            }
             $$.value.len = $1.value.len + $2.value.len;
 
             sqli_token_data_destructor(&$1);

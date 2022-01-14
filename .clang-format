@@ -1,0 +1,127 @@
+# Wallarm C formatting rules
+# date: Mon Dec 6 15:55:30 MSK 2021
+#
+# Clang-Format Style Options: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+BasedOnStyle: Google
+
+AccessModifierOffset: -4
+AlignAfterOpenBracket: AlwaysBreak
+AlignArrayOfStructures: Left
+AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None # Also formats struct fields.
+AlignEscapedNewlines: Left
+AlignOperands: Align
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakAfterReturnType: All
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: 'Yes'
+AttributeMacros:
+  - WALLARM_UNUSED
+  - DETECT_HIDDEN
+BinPackArguments: true
+BinPackParameters: true
+BitFieldColonSpacing: Both
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel:   false
+  AfterClass:       true
+  AfterControlStatement: Never
+  AfterEnum:        false
+  AfterFunction:    true
+  AfterNamespace:   false
+  AfterStruct:      false
+  AfterUnion:       false
+  AfterExternBlock: false
+  BeforeCatch:      true
+  BeforeElse:       false
+  BeforeWhile:      false
+  IndentBraces:     false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+ColumnLimit: 100
+CompactNamespaces: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+FixNamespaceComments: false
+ForEachMacros:
+  - PROTON_ATTBLOCK_FOREACH
+  - PROTON_ATTCLASS_FOREACH
+  - PROTON_ATTSRC_FOREACH
+  - PROTON_BUFCHAIN_FOREACH
+  - PROTON_BUFCHAIN_FOREACH_SAFE
+  - PROTON_VEC_FOREACH
+  - PROTON_VEC_FOREACH_SAFE
+  - PROTON_VEC_FOREACH_SAFE_I
+  - RB_FOREACH
+  - RB_FOREACH_FROM
+  - RB_FOREACH_REVERSE
+  - RB_FOREACH_REVERSE_FROM
+  - RB_FOREACH_REVERSE_SAFE
+  - RB_FOREACH_SAFE
+  - SPLAY_FOREACH
+  - STAILQ_FOREACH
+  - W_INT_FOREACH
+  - W_UINT32_FOREACH
+  - W_UINT64_FOREACH
+  - WPTRCACHE_FOREACH
+  - WRB_FOREACH_PDFS
+  - WSTAILQ_FOREACH_SAFE
+IncludeBlocks: Regroup
+IndentCaseLabels: false
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+IndentWrappedFunctionNames: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+Language: Cpp
+# Interpret WALLARM_LIST_FOREACH_BEGIN* macros as Begin blocks
+# instead of Foreach block because they must be ended with
+# WALLARM_LIST_FOREACH_END macro.
+MacroBlockBegin: "^WALLARM_LIST_FOREACH_BEGIN|WALLARM_LIST_FOREACH_BEGIN_LAST$"
+MacroBlockEnd: "^WALLARM_LIST_FOREACH_END$"
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: None
+PointerAlignment: Right
+ReflowComments: true
+SortIncludes: false
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+Standard: Cpp11
+TabWidth: 4
+TypenameMacros:
+  - RB_ENTRY
+  - STAILQ_ENTRY
+UseTab: Never

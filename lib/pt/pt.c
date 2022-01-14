@@ -6,11 +6,13 @@ static const struct {
     struct detect_ctx_desc desc;
     enum pt_parser_tokentype start_tok;
 } pt_ctxs[] = {
+    // clang-format off
     [PT_CTX_INJECTION] = {
         .desc = {.name = {CSTR_LEN("inj")}},
         .start_tok = TOK_START_PT_INJ,
     },
 };
+// clang-format on
 
 static struct detect *
 detect_pt_open(struct detect_parser *parser)
@@ -102,8 +104,7 @@ detect_pt_push_token(struct pt_detect_ctx *ctx, int tok, void *tok_val)
          */
         if (ctx->detect->finish_cb != NULL)
             rv = ctx->detect->finish_cb(
-                ctx->detect, ctx->ctxnum,
-                ctx->detect->nctx - ctx->detect->nctx_finished,
+                ctx->detect, ctx->ctxnum, ctx->detect->nctx - ctx->detect->nctx_finished,
                 ctx->detect->finish_cb_arg);
         else
             rv = 0;
@@ -123,8 +124,7 @@ detect_pt_start(struct detect *detect)
             continue;
         ctx->pstate = pt_parser_pstate_new();
         pt_lexer_init(&ctx->lexer);
-        if (detect_pt_push_token(
-                ctx, pt_ctxs[ctx->type].start_tok, NULL) != 0)
+        if (detect_pt_push_token(ctx, pt_ctxs[ctx->type].start_tok, NULL) != 0)
             break;
     }
     return (0);
@@ -154,15 +154,13 @@ detect_pt_stop(struct detect *detect)
 }
 
 static int
-pt_lexer_add_data(
-    struct pt_detect_ctx *ctx, const void *data, size_t siz, bool fin)
+pt_lexer_add_data(struct pt_detect_ctx *ctx, const void *data, size_t siz, bool fin)
 {
     return (detect_re2c_add_data(&ctx->lexer.re2c, data, siz, fin));
 }
 
 static int
-detect_pt_add_data(
-    struct detect *detect, const void *data, size_t siz, bool fin)
+detect_pt_add_data(struct detect *detect, const void *data, size_t siz, bool fin)
 {
     unsigned i;
     union PT_PARSER_STYPE token_arg;
@@ -190,14 +188,12 @@ detect_pt_add_data(
         } while (!ctx->res.finished && token != -EAGAIN);
     }
 
-  done:
+done:
     return (rv);
 }
 
 static int
-pt_store_key(
-    struct pt_detect_ctx *ctx,
-    struct pt_token_arg_data *info)
+pt_store_key(struct pt_detect_ctx *ctx, struct pt_token_arg_data *info)
 {
     const static struct {
         struct detect_str name;
@@ -213,13 +209,11 @@ pt_store_key(
         switch (info->tok) {
         case TOK_SEP:
             detect_ctx_result_store_token(
-                &ctx->res, &flagnames[i].name,
-                &(struct detect_str){CSTR_LEN("sep")});
+                &ctx->res, &flagnames[i].name, &(struct detect_str){CSTR_LEN("sep")});
             break;
         case TOK_TRAV:
             detect_ctx_result_store_token(
-                &ctx->res, &flagnames[i].name,
-                &(struct detect_str){CSTR_LEN("trav")});
+                &ctx->res, &flagnames[i].name, &(struct detect_str){CSTR_LEN("trav")});
             break;
         default:
             break;
@@ -230,9 +224,7 @@ pt_store_key(
 }
 
 int
-pt_store_data(
-    struct pt_detect_ctx *ctx,
-    struct pt_token_arg_data *info)
+pt_store_data(struct pt_detect_ctx *ctx, struct pt_token_arg_data *info)
 {
     switch (info->tok) {
     case TOK_NAME:

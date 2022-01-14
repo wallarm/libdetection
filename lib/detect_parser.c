@@ -11,17 +11,17 @@ struct detect_parser_info {
 RB_HEAD(detect_parser_tree, detect_parser_info);
 #define DETECT_PARSER_INFO2KEY(info) (&(info)->name)
 WRB_GENERATE_STATIC(
-    detect_parser_tree, detect_parser_info, struct detect_str *,
-    link, detect_str_cmp, DETECT_PARSER_INFO2KEY);
+    detect_parser_tree, detect_parser_info, struct detect_str *, link, detect_str_cmp,
+    DETECT_PARSER_INFO2KEY);
 
 static struct detect_parser_tree detect_parsers;
 
-#define TRYLOAD(rc, parser)                             \
-    do {                                                \
-        extern struct detect_parser parser;             \
-                                                        \
-        if (!!(rc = s_detect_parser_load(&parser)))     \
-            goto done;                                  \
+#define TRYLOAD(rc, parser)                         \
+    do {                                            \
+        extern struct detect_parser parser;         \
+                                                    \
+        if (!!(rc = s_detect_parser_load(&parser))) \
+            goto done;                              \
     } while (0)
 
 static int
@@ -56,7 +56,7 @@ detect_parser_init(void)
     TRYLOAD(rc, detect_parser_sqli);
     TRYLOAD(rc, detect_parser_pt);
     TRYLOAD(rc, detect_parser_bash);
-  done:
+done:
     if (rc) {
         detect_parser_deinit();
     }
@@ -68,7 +68,7 @@ detect_parser_deinit(void)
 {
     struct detect_parser_info *pi, *pi_tmp;
 
-    WRB_FOREACH_PDFS(pi, detect_parser_tree, &detect_parsers, pi_tmp) {
+    WRB_FOREACH_PDFS (pi, detect_parser_tree, &detect_parsers, pi_tmp) {
         if (pi->parser->deinit != NULL)
             pi->parser->deinit();
         free(pi);
