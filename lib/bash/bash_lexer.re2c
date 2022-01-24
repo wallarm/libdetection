@@ -709,6 +709,7 @@ return_word:
                   }
                   ctx->lexer.buf.data.len--;
 
+                  // Try to extract command from globbing patterns in curly braces:
                   while (true) {
                       size_t s_len = ctx->lexer.buf.data.len;
                       char *s_end = ctx->lexer.buf.data.str + s_len;
@@ -724,7 +725,8 @@ return_word:
                       if (!pch)
                           break;
 
-                      memcpy(start, start + 1, pch - (start + 1));
+                      // Shift first param to the left (overwrite leftmost curly brace):
+                      memmove(start, start + 1, pch - (start + 1));
                       memcpy(pch - 1, end + 1, s_end - (end + 1) + 1);
                       ctx->lexer.buf.data.len =
                           pch - 1 + (s_end - (end + 1)) - ctx->lexer.buf.data.str;
