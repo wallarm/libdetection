@@ -682,24 +682,26 @@ var:
 
 return_word:
           {
-              char *pch = memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len);
-              if (pch) {
-                  struct var *var = calloc(1, sizeof(*var) + ctx->lexer.buf.data.len - 1 /* '=' */ + 2 /* '\0' */);
+              if (ctx->lexer.buf.data.str) {
+                  char *pch = memchr(ctx->lexer.buf.data.str, '=', ctx->lexer.buf.data.len);
+                  if (pch) {
+                      struct var *var = calloc(1, sizeof(*var) + ctx->lexer.buf.data.len - 1 /* '=' */ + 2 /* '\0' */);
 
-                  var->name.str = (void *)(var + 1);
-                  memcpy(var->name.str, ctx->lexer.buf.data.str, pch - ctx->lexer.buf.data.str);
-                  var->name.len = pch - ctx->lexer.buf.data.str;
-                  var->name.str[var->name.len] = 0;
+                      var->name.str = (void *)(var + 1);
+                      memcpy(var->name.str, ctx->lexer.buf.data.str, pch - ctx->lexer.buf.data.str);
+                      var->name.len = pch - ctx->lexer.buf.data.str;
+                      var->name.str[var->name.len] = 0;
 
-                  var->val.str = (void *)((char *)(var + 1) + (pch - ctx->lexer.buf.data.str + 1));
-                  memcpy(var->val.str, pch + 1, ctx->lexer.buf.data.str + ctx->lexer.buf.data.len - pch - 1);
-                  var->val.len = ctx->lexer.buf.data.str + ctx->lexer.buf.data.len - pch - 1;
-                  var->val.str[var->val.len] = 0;
+                      var->val.str = (void *)((char *)(var + 1) + (pch - ctx->lexer.buf.data.str + 1));
+                      memcpy(var->val.str, pch + 1, ctx->lexer.buf.data.str + ctx->lexer.buf.data.len - pch - 1);
+                      var->val.len = ctx->lexer.buf.data.str + ctx->lexer.buf.data.len - pch - 1;
+                      var->val.str[var->val.len] = 0;
 
-                  RB_INSERT(vars_tree, &ctx->lexer.vars, var);
+                      RB_INSERT(vars_tree, &ctx->lexer.vars, var);
 
-                  detect_buf_deinit(&ctx->lexer.buf);
-                  KEYNAME_SET_RET_WO_CHECK(ctx, arg, ASSIGNMENT_WORD, 0);
+                      detect_buf_deinit(&ctx->lexer.buf);
+                      KEYNAME_SET_RET_WO_CHECK(ctx, arg, ASSIGNMENT_WORD, 0);
+                  }
               }
 
               if (ctx->last_read_token != TOK_WORD && ctx->lexer.buf.data.str) {
@@ -709,6 +711,7 @@ return_word:
                   }
                   ctx->lexer.buf.data.len--;
 
+                  // Try to extract command from globbing patterns in curly braces:
                   while (true) {
                       size_t s_len = ctx->lexer.buf.data.len;
                       char *s_end = ctx->lexer.buf.data.str + s_len;
@@ -724,7 +727,8 @@ return_word:
                       if (!pch)
                           break;
 
-                      memcpy(start, start + 1, pch - (start + 1));
+                      // Shift first param to the left (overwrite leftmost curly brace):
+                      memmove(start, start + 1, pch - (start + 1));
                       memcpy(pch - 1, end + 1, s_end - (end + 1) + 1);
                       ctx->lexer.buf.data.len =
                           pch - 1 + (s_end - (end + 1)) - ctx->lexer.buf.data.str;
