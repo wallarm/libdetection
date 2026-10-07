@@ -1,5 +1,6 @@
 #include <CUnit/Basic.h>
 #include <detect/detect.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include "../bash/bash_test.h"
 
@@ -44,6 +45,81 @@ Tsimplest(void)
     CU_ASSERT_EQUAL(detect_deinit(), 0);
     CU_ASSERT_EQUAL(detect_init(), 0);
     CU_ASSERT_EQUAL(detect_deinit(), 0);
+}
+
+static void
+Topen_after_deinit(void)
+{
+    struct detect *detect;
+
+    CU_ASSERT_EQUAL(detect_init(), 0);
+    CU_ASSERT_EQUAL(detect_deinit(), 0);
+    CU_ASSERT_PTR_NULL(detect = detect_open("sqli"));
+    if (detect != NULL)
+        detect_close(detect);
+    CU_ASSERT_EQUAL(detect_init(), 0);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    CU_ASSERT_EQUAL(detect_deinit(), 0);
+}
+
+#define INIT_RACE_THREADS 8
+#define INIT_RACE_ROUNDS  50
+
+struct s_init_race {
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+    bool go;
+    unsigned failures;
+};
+
+static void *
+s_init_race_worker(void *arg)
+{
+    struct s_init_race *race = arg;
+    struct detect *detect;
+    bool failed = false;
+
+    pthread_mutex_lock(&race->lock);
+    while (!race->go) pthread_cond_wait(&race->cond, &race->lock);
+    pthread_mutex_unlock(&race->lock);
+
+    if (detect_init() != 0)
+        failed = true;
+    else if ((detect = detect_open("sqli")) == NULL)
+        failed = true;
+    else if (detect_close(detect) != 0)
+        failed = true;
+
+    if (failed) {
+        pthread_mutex_lock(&race->lock);
+        race->failures++;
+        pthread_mutex_unlock(&race->lock);
+    }
+    return (NULL);
+}
+
+static void
+Tinit_concurrent(void)
+{
+    struct s_init_race race = {
+        .lock = PTHREAD_MUTEX_INITIALIZER,
+        .cond = PTHREAD_COND_INITIALIZER,
+    };
+    pthread_t threads[INIT_RACE_THREADS];
+
+    for (unsigned round = 0; round != INIT_RACE_ROUNDS; round++) {
+        race.go = false;
+        for (unsigned i = 0; i != INIT_RACE_THREADS; i++)
+            CU_ASSERT_EQUAL_FATAL(pthread_create(&threads[i], NULL, s_init_race_worker, &race), 0);
+        pthread_mutex_lock(&race.lock);
+        race.go = true;
+        pthread_cond_broadcast(&race.cond);
+        pthread_mutex_unlock(&race.lock);
+        for (unsigned i = 0; i != INIT_RACE_THREADS; i++) pthread_join(threads[i], NULL);
+        CU_ASSERT_EQUAL(detect_deinit(), 0);
+    }
+    CU_ASSERT_EQUAL(race.failures, 0);
 }
 
 static int
@@ -751,7 +827,9 @@ int
 main(void)
 {
     CU_TestInfo generic_tests[] = {
-        {"simplest", Tsimplest},
+        {"simplest",          Tsimplest         },
+        {"open_after_deinit", Topen_after_deinit},
+        {"init_concurrent",   Tinit_concurrent  },
         CU_TEST_INFO_NULL
     };
     CU_TestInfo sqli_tests[] = {

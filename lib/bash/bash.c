@@ -86,7 +86,7 @@ bash_lexer_init(struct bash_detect_lexer_ctx *lexer)
 static void
 bash_lexer_deinit(struct bash_detect_lexer_ctx *lexer)
 {
-    struct detect_parser_info *v, *v_tmp;
+    struct var *v, *v_tmp;
 
     WRB_FOREACH_PDFS (v, vars_tree, &lexer->vars, v_tmp) {
         free(v);

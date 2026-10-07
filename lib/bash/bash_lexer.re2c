@@ -542,7 +542,7 @@ bash_get_token(
 var:
           {
               struct var *var;
-              if ((var = WRB_FIND(vars_tree, &ctx->lexer.vars, &ctx->lexer.var_name)) != NULL) {
+              if ((var = WRB_FIND(vars_tree, &ctx->lexer.vars, &ctx->lexer.var_name.data)) != NULL) {
                   for(int i = 0; i < var->val.len; ++i) {
                       if (memchr(" \t", var->val.str[i], 2)) {
                           detect_buf_deinit(&ctx->lexer.var_name);
