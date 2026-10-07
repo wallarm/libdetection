@@ -73,6 +73,7 @@ detect_parser_deinit(void)
             pi->parser->deinit();
         free(pi);
     }
+    RB_INIT(&detect_parsers);
     return (0);
 }
 

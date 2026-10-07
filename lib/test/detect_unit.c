@@ -46,6 +46,22 @@ Tsimplest(void)
     CU_ASSERT_EQUAL(detect_deinit(), 0);
 }
 
+static void
+Topen_after_deinit(void)
+{
+    struct detect *detect;
+
+    CU_ASSERT_EQUAL(detect_init(), 0);
+    CU_ASSERT_EQUAL(detect_deinit(), 0);
+    CU_ASSERT_PTR_NULL(detect = detect_open("sqli"));
+    if (detect != NULL)
+        detect_close(detect);
+    CU_ASSERT_EQUAL(detect_init(), 0);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(detect = detect_open("sqli"));
+    CU_ASSERT_EQUAL(detect_close(detect), 0);
+    CU_ASSERT_EQUAL(detect_deinit(), 0);
+}
+
 static int
 s_sqli_suite_init(void)
 {
@@ -751,7 +767,8 @@ int
 main(void)
 {
     CU_TestInfo generic_tests[] = {
-        {"simplest", Tsimplest},
+        {"simplest",          Tsimplest         },
+        {"open_after_deinit", Topen_after_deinit},
         CU_TEST_INFO_NULL
     };
     CU_TestInfo sqli_tests[] = {
