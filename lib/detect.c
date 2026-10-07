@@ -1,8 +1,11 @@
 #include "detect_int.h"
 #include <errno.h>
+#include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
 
+/* Serializes detect_init() and detect_deinit(): the parser registry is global. */
+static pthread_mutex_t detect_init_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool detect_initialized = false;
 
 #define DETECT_TOKEN_STAT2KEY(stat) (&(stat)->token_name)
@@ -25,26 +28,28 @@ s_detect_deinit(void)
 int
 detect_init(void)
 {
-    int rc;
+    int rc = 0;
 
-    if (detect_initialized)
-        return (0);
-
-    if (!!(rc = detect_parser_init())) {
-        s_detect_deinit();
-        return (rc);
+    pthread_mutex_lock(&detect_init_lock);
+    if (!detect_initialized) {
+        if (!!(rc = detect_parser_init()))
+            s_detect_deinit();
+        else
+            detect_initialized = true;
     }
-    detect_initialized = true;
-    return (0);
+    pthread_mutex_unlock(&detect_init_lock);
+    return (rc);
 }
 
 int
 detect_deinit(void)
 {
-    if (!detect_initialized)
-        return (0);
-    s_detect_deinit();
-    detect_initialized = false;
+    pthread_mutex_lock(&detect_init_lock);
+    if (detect_initialized) {
+        s_detect_deinit();
+        detect_initialized = false;
+    }
+    pthread_mutex_unlock(&detect_init_lock);
     return (0);
 }
 

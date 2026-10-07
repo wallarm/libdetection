@@ -5,5 +5,5 @@ set (UNIT_SOURCES
 set (UNIT_TARGET "unit")
 
 add_executable(${UNIT_TARGET} ${UNIT_SOURCES})
-target_link_libraries(${UNIT_TARGET} ${TARGET} cunit)
+target_link_libraries(${UNIT_TARGET} ${TARGET} cunit ${CMAKE_THREAD_LIBS_INIT})
 add_test(NAME ${UNIT_TARGET} COMMAND ${UNIT_TARGET})

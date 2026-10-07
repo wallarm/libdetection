@@ -1,4 +1,5 @@
 find_package(LibWallarmMisc REQUIRED)
+find_package(Threads REQUIRED)
 
 set (TARGET "detection")
 set (TARGET_OBJ "${TARGET}_obj")
@@ -16,6 +17,7 @@ include_directories(
 
 set (LIBDEPS
   ${LIBWALLARMMISC_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
 )
 
 set (SOURCES
